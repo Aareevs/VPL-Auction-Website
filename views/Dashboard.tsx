@@ -1,0 +1,268 @@
+import React from 'react';
+import { useAuction } from '../context/AuctionContext';
+import { formatCurrency } from '../constants';
+import { Trophy, DollarSign, History, Shield, Globe } from 'lucide-react';
+import { Player } from '../types';
+
+const getCountryFlag = (country: string) => {
+  const c = country.toLowerCase().trim();
+  if (c === 'india' || c === 'ind') return '🇮🇳';
+  if (c === 'australia' || c === 'aus') return '🇦🇺';
+  if (c === 'england' || c === 'eng') return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+  if (c === 'south africa' || c === 'sa') return '🇿🇦';
+  if (c === 'new zealand' || c === 'nz') return '🇳🇿';
+  if (c === 'west indies' || c === 'wi') return '🏝️';
+  if (c === 'pakistan' || c === 'pak') return '🇵🇰';
+  if (c === 'sri lanka' || c === 'sl') return '🇱🇰';
+  if (c === 'afghanistan' || c === 'afg') return '🇦🇫';
+  if (c === 'bangladesh' || c === 'ban') return '🇧🇩';
+  if (c === 'ireland' || c === 'ire') return '🇮🇪';
+  if (c === 'zimbabwe' || c === 'zim') return '🇿🇼';
+  return '🏳️';
+};
+
+const getStatsToDisplay = (player: Player) => {
+    const role = player.role.toLowerCase();
+    const stats = player.stats;
+    const list = [];
+    
+    // Common stats
+    list.push({ label: 'Age', value: stats.age });
+    list.push({ label: 'Matches', value: stats.matches });
+
+    if (role.includes('all') || role.includes('round')) {
+        // All Rounder
+        list.push({ label: 'Runs', value: stats.runs });
+        list.push({ label: 'Average', value: stats.avg });
+        list.push({ label: 'Strike Rate', value: stats.strikeRate });
+        list.push({ label: 'High Score', value: stats.highScore || 'N/A' });
+        list.push({ label: 'Wickets', value: stats.wickets || 0 });
+        list.push({ label: 'Economy', value: stats.economy || 0 });
+        list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
+    } else if (role.includes('bowl')) {
+        // Bowler
+        list.push({ label: 'Wickets', value: stats.wickets || 0 });
+        list.push({ label: 'Economy', value: stats.economy || 0 });
+        list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
+    } else {
+        // Batter or Wicket Keeper
+        list.push({ label: 'Runs', value: stats.runs });
+        list.push({ label: 'Average', value: stats.avg });
+        list.push({ label: 'Strike Rate', value: stats.strikeRate });
+        list.push({ label: 'High Score', value: stats.highScore || 'N/A' });
+    }
+    
+    return list;
+};
+
+const Dashboard: React.FC = () => {
+  const { currentPlayer, currentBid, currentBidTeamId, teams, bidHistory, players } = useAuction();
+
+  const holdingTeam = teams.find(t => t.id === currentBidTeamId);
+  const recentSold = players.filter(p => p.status === 'SOLD').slice(-4).reverse();
+
+  return (
+    <div className="min-h-screen bg-slate-950 pt-20 pb-12 px-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6">
+        
+        {/* LEFT COLUMN: Main Player Card */}
+        <div className="col-span-12 lg:col-span-8">
+          
+          {/* PLAYER CARD CONTAINER */}
+          <div className="relative w-full min-h-[500px] bg-gradient-to-r from-[#001845] to-[#023e8a] rounded-3xl overflow-hidden shadow-2xl border border-blue-900/50 flex flex-col md:block">
+            
+            {/* Background Graphics */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -right-20 -top-20 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute left-0 bottom-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+                {/* Diagonal graphic lines */}
+                <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-blue-900/50 to-transparent -skew-x-12 transform -translate-x-10"></div>
+            </div>
+
+            {currentPlayer ? (
+                <>
+                    {/* LEFT CONTENT (Text & Stats) */}
+                    <div className="relative w-full md:w-[50%] h-full p-8 md:p-10 flex flex-col justify-between z-10">
+                        
+                        {/* Header Info */}
+                        <div className="space-y-4">
+                             <div className="flex items-center gap-3 mb-2">
+                                <span className="text-3xl filter drop-shadow-md">
+                                    {getCountryFlag(currentPlayer.country)}
+                                </span>
+                                <span className="text-white font-bold text-xl uppercase tracking-widest flex items-center gap-2">
+                                    {currentPlayer.country}
+                                </span>
+                             </div>
+
+                             {/* Name Box */}
+                             <div className="relative inline-block">
+                                 <div className="bg-gradient-to-r from-[#4cc9f0] to-[#4361ee] text-slate-950 text-5xl md:text-6xl lg:text-7xl font-black px-6 py-2 uppercase display-font transform -skew-x-6 shadow-lg shadow-blue-500/20 tracking-wide whitespace-nowrap">
+                                     {currentPlayer.name}
+                                 </div>
+                             </div>
+                             
+                             {/* Role */}
+                             <div className="flex items-center gap-3 mt-4 text-blue-100">
+                                 <Shield size={28} className="text-white fill-white/10" />
+                                 <span className="text-white font-bold text-2xl uppercase tracking-wider font-mono">{currentPlayer.role}</span>
+                             </div>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="my-6 flex-grow">
+                            <div className="grid grid-cols-1 gap-1 border-t-2 border-blue-500/30 pt-4">
+                                {getStatsToDisplay(currentPlayer).map((stat, index) => (
+                                    <StatRow key={index} label={stat.label} value={stat.value} />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer / Base Price */}
+                        <div className="mt-auto">
+                            <div className="text-red-500 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide">
+                                BASE PRICE : <span className="text-red-500">{formatCurrency(currentPlayer.basePrice)}</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* RIGHT CONTENT - IMAGE */}
+                    <div className="relative md:absolute bottom-0 -right-16 w-full md:w-[65%] h-[400px] md:h-[115%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
+                        {currentPlayer.imageUrl ? (
+                             <img 
+                                src={currentPlayer.imageUrl} 
+                                alt={currentPlayer.name} 
+                                className="h-full w-full object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]"
+                             />
+                        ) : (
+                             <div className="h-full w-full flex items-center justify-center text-white/10 text-9xl font-bold">?</div>
+                        )}
+                    </div>
+
+                    {/* LIVE BID OVERLAY */}
+                    <div className="absolute top-12 right-6 md:right-8 z-20">
+                         <div className="bg-slate-950/80 backdrop-blur-md border border-yellow-500/50 rounded-xl p-4 shadow-xl min-w-[200px] md:min-w-[240px] text-center">
+                             <div className="text-yellow-500 text-xs font-bold uppercase tracking-widest mb-1 animate-pulse">Current Bid</div>
+                             <div className="text-5xl text-white font-bold display-font">
+                                 {currentBid > 0 ? formatCurrency(currentBid) : "---"}
+                             </div>
+                             {holdingTeam && (
+                                 <div className="mt-2 text-xs font-bold text-slate-300 border-t border-slate-700 pt-2 flex items-center justify-center gap-2">
+                                     <span>HELD BY:</span>
+                                     <span style={{ color: holdingTeam.primaryColor }} className="text-sm">{holdingTeam.name}</span>
+                                 </div>
+                             )}
+                         </div>
+                    </div>
+                </>
+            ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-12 relative z-10">
+                    <div className="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center mb-6 animate-pulse border border-blue-500/30">
+                        <Trophy className="text-blue-400" size={40} />
+                    </div>
+                    <h2 className="text-5xl text-white font-bold display-font mb-2">Waiting for Player</h2>
+                    <p className="text-blue-300 text-lg">The next auction lot will appear here soon.</p>
+                </div>
+            )}
+            
+          </div>
+
+          {/* Bid History Ticker */}
+          <div className="mt-6 bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+            <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                <History size={14} /> Real-time Bids
+            </h3>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                {bidHistory.length === 0 ? (
+                    <span className="text-slate-600 text-sm italic">No bids yet</span>
+                ) : (
+                    bidHistory.map((bid, idx) => {
+                         const team = teams.find(t => t.id === bid.teamId);
+                         return (
+                             <div key={idx} className="flex-shrink-0 bg-slate-800 rounded-lg px-4 py-2 border border-slate-700 flex items-center gap-3">
+                                 <div className="w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ background: team?.primaryColor }}>{team?.shortName}</div>
+                                 <span className="text-white font-mono font-bold">{formatCurrency(bid.amount)}</span>
+                             </div>
+                         )
+                    })
+                )}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Sidebar Stats */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          
+          {/* JUST SOLD */}
+          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+             <h3 className="text-white text-lg font-bold display-font mb-4 flex items-center gap-2">
+                <Trophy size={20} className="text-yellow-500" />
+                Just Sold
+             </h3>
+             <div className="space-y-4">
+                {recentSold.length === 0 ? (
+                    <div className="text-slate-500 text-sm">No players sold yet.</div>
+                ) : (
+                    recentSold.map(player => {
+                        const team = teams.find(t => t.id === player.teamId);
+                        return (
+                            <div key={player.id} className="flex items-center gap-4 bg-slate-950/50 p-3 rounded-xl border border-slate-800/50">
+                                <div className="w-12 h-12 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                     {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">IMG</div>}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-white font-bold truncate">{player.name}</div>
+                                    <div className="text-xs text-slate-400 truncate">Sold to <span className="text-slate-200">{team?.name}</span></div>
+                                </div>
+                                <div className="text-green-400 font-bold text-lg font-mono">
+                                    {formatCurrency(player.soldPrice || 0)}
+                                </div>
+                            </div>
+                        )
+                    })
+                )}
+             </div>
+          </div>
+
+          {/* PURSE STATUS */}
+          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+             <h3 className="text-white text-lg font-bold display-font mb-4 flex items-center gap-2">
+                <DollarSign size={20} className="text-green-500" />
+                Team Purses
+             </h3>
+             <div className="space-y-4">
+                {teams.map(team => (
+                    <div key={team.id} className="group">
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-slate-200 text-sm font-bold">{team.name}</span>
+                            <span className="text-white font-mono text-sm font-bold">{formatCurrency(team.remainingPurse)}</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/50">
+                            <div 
+                                className="h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(0,0,0,0.3)]" 
+                                style={{ 
+                                    width: `${(team.remainingPurse / team.totalPurse) * 100}%`,
+                                    backgroundColor: team.primaryColor 
+                                }} 
+                            />
+                        </div>
+                    </div>
+                ))}
+             </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatRow = ({ label, value }: { label: string, value: number | string }) => (
+    <div className="flex items-center justify-between py-3 border-b border-white/10 last:border-0 hover:bg-white/5 px-2 rounded transition-colors">
+        <span className="text-blue-200 font-bold uppercase text-base tracking-wider">{label}</span>
+        <span className="text-white font-bold text-2xl font-mono">{value}</span>
+    </div>
+);
+
+export default Dashboard;
