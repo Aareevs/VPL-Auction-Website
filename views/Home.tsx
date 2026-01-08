@@ -63,6 +63,13 @@ const Home: React.FC = () => {
           <p className="text-slate-400 mt-2">Sign in to join the bidding war</p>
         </div>
 
+        {/* Warning for development/setup */}
+        {!import.meta.env.VITE_SUPABASE_URL && (
+           <div className="mb-6 p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-200 text-sm">
+             <strong>Configuration Required:</strong> Supabase credentials are missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment/Vercel settings.
+           </div>
+        )}
+
         {message && (
           <div className="mb-4 p-3 bg-blue-900/30 border border-blue-800 rounded-lg text-blue-200 text-sm">
             {message}
