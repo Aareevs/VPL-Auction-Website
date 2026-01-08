@@ -26,9 +26,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
-        <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-xl leading-none">V</span>
-        </div>
+        <img src="/logo.png" alt="VPL Logo" className="w-10 h-10 object-contain" />
         <span className="text-2xl font-bold tracking-tight text-white display-font pt-1">VPL 2026</span>
       </div>
 

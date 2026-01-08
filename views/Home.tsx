@@ -56,6 +56,7 @@ const Home: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <div className="text-center mb-8">
+          <img src="/logo.png" alt="VPL Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font">
             VPL Auction 2026
           </h1>
