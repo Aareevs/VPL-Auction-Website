@@ -437,6 +437,41 @@ const Admin: React.FC = () => {
             </div>
         </div>
 
+        {/* RE-AUCTION QUEUE (Passed Players) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col h-[400px]">
+            <h3 className="text-white font-bold mb-4 flex items-center justify-between">
+                <span className="text-red-400">Re-Auction Queue ({players.filter(p => p.status === PlayerStatus.PASSED).length})</span>
+            </h3>
+            
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {players.filter(p => p.status === PlayerStatus.PASSED).length === 0 ? (
+                    <div className="text-slate-500 text-center mt-12">No passed players.</div>
+                ) : (
+                    players.filter(p => p.status === PlayerStatus.PASSED).map(player => (
+                        <div key={player.id} className="flex items-center justify-between p-3 bg-red-950/20 rounded-lg hover:bg-red-900/30 transition-colors border border-red-900/30 mb-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 grayscale">
+                                    {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={20} /></div>}
+                                </div>
+                                <div>
+                                    <div className="text-white font-medium">{player.name}</div>
+                                    <div className="text-xs text-slate-400">Set {player.set} • {player.role}</div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => startAuction(player.id)}
+                                disabled={!!currentPlayer}
+                                className="bg-red-600 hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2 rounded-full transition-opacity"
+                                title="Restart Auction"
+                            >
+                                <PlayCircle size={18} />
+                            </button>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+
       </div>
     </div>
   );
