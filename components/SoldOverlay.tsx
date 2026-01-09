@@ -64,8 +64,12 @@ const SoldOverlay: React.FC<SoldOverlayProps> = ({ team, player, price, onComple
                             
                             {/* LEFT: Team Info */}
                             <div className="flex flex-col items-center md:items-start space-y-4 animate-slideUp delay-100 text-center md:text-left">
-                                <div className="bg-white/10 p-4 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
-                                    <div className="text-4xl font-black tracking-tighter uppercase font-mono">{team.shortName}</div>
+                                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center">
+                                    {team.logoUrl ? (
+                                        <img src={team.logoUrl} alt={team.name} className="w-24 h-24 object-contain" />
+                                    ) : (
+                                        <div className="text-4xl font-black tracking-tighter uppercase font-mono">{team.shortName}</div>
+                                    )}
                                 </div>
                                 <div>
                                     <div className="text-yellow-300 font-bold tracking-widest uppercase text-sm mb-1">Winning Bid</div>

@@ -241,7 +241,9 @@ const Dashboard: React.FC = () => {
                          const team = teams.find(t => t.id === bid.teamId);
                          return (
                              <div key={idx} className="flex-shrink-0 bg-slate-800 rounded-lg px-4 py-2 border border-slate-700 flex items-center gap-3">
-                                 <div className="w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ background: team?.primaryColor }}>{team?.shortName}</div>
+                                 <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-700 border border-slate-600 flex items-center justify-center">
+                                     {team?.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[10px] font-bold text-white flex items-center justify-center w-full h-full" style={{ background: team?.primaryColor }}>{team?.shortName}</div>}
+                                 </div>
                                  <span className="text-white font-mono font-bold">{formatCurrency(bid.amount)}</span>
                              </div>
                          )
@@ -279,7 +281,11 @@ const Dashboard: React.FC = () => {
                                         {isUnsold ? (
                                             <span className="text-slate-500">Unsold in Set {player.set}</span>
                                         ) : (
-                                            <>Sold to <span className="text-slate-200">{team?.name}</span></>
+                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                <span className="text-slate-400">Sold to</span>
+                                                {team?.logoUrl && <img src={team.logoUrl} className="w-4 h-4 object-contain" />}
+                                                <span className="text-slate-200 font-bold">{team?.shortName}</span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -303,7 +309,12 @@ const Dashboard: React.FC = () => {
                 {teams.map(team => (
                     <div key={team.id} className="group">
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-slate-200 text-sm font-bold">{team.name}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center border border-slate-700">
+                                     {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[8px] font-bold text-white">{team.shortName}</div>}
+                                </div>
+                                <span className="text-slate-200 text-sm font-bold">{team.name}</span>
+                            </div>
                             <span className="text-white font-mono text-sm font-bold">{formatCurrency(team.remainingPurse)}</span>
                         </div>
                         <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/50">

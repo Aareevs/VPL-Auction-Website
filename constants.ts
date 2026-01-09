@@ -5,103 +5,113 @@ export const INITIAL_PURSE = 10000; // 100 Crores
 export const INITIAL_TEAMS: Team[] = [
   {
     id: 't1',
-    name: 'Royal Strikers',
-    shortName: 'RS',
-    primaryColor: '#1e3a8a', // Blue 900
-    secondaryColor: '#fbbf24', // Amber 400
+    name: 'Chennai Super Kings',
+    shortName: 'CSK',
+    primaryColor: '#F9CD05', // CSK Yellow
+    secondaryColor: '#005FAC', // CSK Blue
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/2/2b/Chennai_Super_Kings_Logo.svg'
   },
   {
     id: 't2',
-    name: 'Titan Warriors',
-    shortName: 'TW',
-    primaryColor: '#0f766e', // Teal 700
+    name: 'Mumbai Indians',
+    shortName: 'MI',
+    primaryColor: '#004BA0', // MI Blue
+    secondaryColor: '#D1AB3E', // MI Gold
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/c/cd/Mumbai_Indians_Logo.svg'
+  },
+  {
+    id: 't3',
+    name: 'Royal Challengers Bangalore',
+    shortName: 'RCB',
+    primaryColor: '#EC1C24', // RCB Red
+    secondaryColor: '#2B2A29', // RCB Black/Gold
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2a/Royal_Challengers_Bangalore_2020.svg/1200px-Royal_Challengers_Bangalore_2020.svg.png'
+  },
+  {
+    id: 't4',
+    name: 'Kolkata Knight Riders',
+    shortName: 'KKR',
+    primaryColor: '#2E0854', // KKR Purple
+    secondaryColor: '#B3A123', // KKR Gold
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/4/4c/Kolkata_Knight_Riders_Logo.svg'
+  },
+  {
+    id: 't5',
+    name: 'Sunrisers Hyderabad',
+    shortName: 'SRH',
+    primaryColor: '#F7A721', // SRH Orange
     secondaryColor: '#000000', // Black
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-  },
-  {
-    id: 't3',
-    name: 'Phoenix Risers',
-    shortName: 'PR',
-    primaryColor: '#dc2626', // Red 600
-    secondaryColor: '#fed7aa', // Orange 200
-    totalPurse: INITIAL_PURSE,
-    remainingPurse: INITIAL_PURSE,
-    squad: [],
-  },
-  {
-    id: 't4',
-    name: 'Thunder Bolts',
-    shortName: 'TB',
-    primaryColor: '#ca8a04', // Yellow 600
-    secondaryColor: '#171717', // Neutral 900
-    totalPurse: INITIAL_PURSE,
-    remainingPurse: INITIAL_PURSE,
-    squad: [],
-  },
-  {
-    id: 't5',
-    name: 'Galaxy Giants',
-    shortName: 'GG',
-    primaryColor: '#7e22ce', // Purple 700
-    secondaryColor: '#e9d5ff', // Purple 200
-    totalPurse: INITIAL_PURSE,
-    remainingPurse: INITIAL_PURSE,
-    squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Sunrisers_Hyderabad.svg'
   },
   {
     id: 't6',
-    name: 'Spartan Spirits',
-    shortName: 'SS',
-    primaryColor: '#b91c1c', // Red 700
-    secondaryColor: '#fecaca', // Red 200
+    name: 'Delhi Capitals',
+    shortName: 'DC',
+    primaryColor: '#17479E', // DC Blue
+    secondaryColor: '#DC333E', // DC Red
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/2/2f/Delhi_Capitals_Logo.svg'
   },
   {
     id: 't7',
-    name: 'Falcon Flyers',
-    shortName: 'FF',
-    primaryColor: '#1d4ed8', // Blue 700
-    secondaryColor: '#bfdbfe', // Blue 200
+    name: 'Rajasthan Royals',
+    shortName: 'RR',
+    primaryColor: '#EA1A85', // RR Pink
+    secondaryColor: '#254AA5', // RR Blue
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/6/60/Rajasthan_Royals_Logo.svg'
   },
   {
     id: 't8',
-    name: 'Ninja Knights',
-    shortName: 'NK',
-    primaryColor: '#15803d', // Green 700
-    secondaryColor: '#bbf7d0', // Green 200
+    name: 'Punjab Kings',
+    shortName: 'PBKS',
+    primaryColor: '#DD1F2D', // PBKS Red
+    secondaryColor: '#A7A9AC', // Silver
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/1/1c/Punjab_Kings_logo_2021.svg'
   },
   {
     id: 't9',
-    name: 'Viking Voyagers',
-    shortName: 'VV',
-    primaryColor: '#a21caf', // Fuchsia 700
-    secondaryColor: '#f5d0fe', // Fuchsia 200
+    name: 'Lucknow Super Giants',
+    shortName: 'LSG',
+    primaryColor: '#0084CA', // LSG Cyan/Blue
+    secondaryColor: '#A6A8AB', // Grey
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/a/a9/Lucknow_Super_Giants_IPL_Logo.svg'
   },
   {
     id: 't10',
-    name: 'Samurai Strikers',
-    shortName: 'SaS',
-    primaryColor: '#be123c', // Rose 700
-    secondaryColor: '#fecdd3', // Rose 200
+    name: 'Gujarat Titans',
+    shortName: 'GT',
+    primaryColor: '#1B2133', // GT Dark Blue
+    secondaryColor: '#BCA05E', // Gold
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/0/09/Gujarat_Titans_Logo.svg'
   },
   {
     id: 't11',
