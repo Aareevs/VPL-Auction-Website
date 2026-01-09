@@ -23,7 +23,7 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/c/cd/Mumbai_Indians_Logo.svg'
+    logoUrl: 'https://a.espncdn.com/combiner/i?img=%2Fi%2Fteamlogos%2Fcricket%2F500%2F335978.png'
   },
   {
     id: 't3',
@@ -78,7 +78,7 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/6/60/Rajasthan_Royals_Logo.svg'
+    logoUrl: 'https://img1.hscicdn.com/image/upload/f_auto/lsci/db/PICTURES/CMS/400400/400406.png'
   },
   {
     id: 't8',
