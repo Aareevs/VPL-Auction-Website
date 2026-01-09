@@ -174,7 +174,7 @@ const Dashboard: React.FC = () => {
 
                         {/* Stats Grid */}
                         <div className="my-6 flex-grow">
-                            <div className="grid grid-cols-1 gap-1 border-t-2 border-blue-500/30 pt-4">
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 border-t-2 border-blue-500/30 pt-4">
                                 {getStatsToDisplay(currentPlayer).map((stat, index) => (
                                     <StatRow key={index} label={stat.label} value={stat.value} />
                                 ))}
@@ -341,9 +341,9 @@ const Dashboard: React.FC = () => {
 };
 
 const StatRow: React.FC<{ label: string, value: number | string }> = ({ label, value }) => (
-    <div className="flex items-center justify-between py-3 border-b border-white/10 last:border-0 hover:bg-white/5 px-2 rounded transition-colors">
-        <span className="text-blue-200 font-bold uppercase text-base tracking-wider">{label}</span>
-        <span className="text-white font-bold text-2xl font-mono">{value}</span>
+    <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded transition-colors">
+        <span className="text-blue-200 font-bold uppercase text-sm tracking-wider">{label}</span>
+        <span className="text-white font-bold text-xl font-mono">{value}</span>
     </div>
 );
 
