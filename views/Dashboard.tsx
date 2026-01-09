@@ -75,38 +75,41 @@ const Dashboard: React.FC = () => {
 
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
+  
+  // Track IDs of players we've already seen as SOLD/PASSED to avoid re-triggering or missing out-of-order updates
+  const processedPlayerIds = React.useRef<Set<string>>(new Set());
 
-  // Trigger Animation when a new player is added to recentSold list
   useEffect(() => {
-    // Check if we have a recently sold player
-    if (recentSold.length > 0) {
-        const latestSold = recentSold[0];
-        console.log("Latest Sold:", latestSold);
-        console.log("Current Animation Data:", soldAnimationData);
-        
-        // Only trigger if:
-        // 1. It's a SOLD player (not PASSED)
-        // 2. We haven't shown animation for this specific player yet (check ID)
-        // 3. We have team data
-        const isSold = latestSold.status === PlayerStatus.SOLD;
-        const isNew = latestSold.id !== soldAnimationData?.player?.id;
-        console.log("Is Sold:", isSold, "Is New:", isNew);
+    // Identify newly sold/passed players by comparing with our ref set
+    const newlySold = recentSold.filter(p => !processedPlayerIds.current.has(p.id));
 
-        if (isSold && isNew) {
-             const winningTeam = teams.find(t => t.id === latestSold.teamId);
-             console.log("Winning Team:", winningTeam);
-             if (winningTeam && latestSold.soldPrice) {
-                 console.log("TRIGGERING ANIMATION!");
-                 setSoldAnimationData({
-                     team: winningTeam,
-                     player: latestSold,
-                     price: latestSold.soldPrice
-                 });
-                 setShowSoldAnimation(true);
-             }
-        }
+    if (newlySold.length > 0) {
+        // We have updates!
+        newlySold.forEach(player => {
+            // Add to processed set immediately so we don't process again
+            processedPlayerIds.current.add(player.id);
+
+            // Trigger animation ONLY if it is a SOLD player
+            if (player.status === PlayerStatus.SOLD) {
+                const winningTeam = teams.find(t => t.id === player.teamId);
+                if (winningTeam && player.soldPrice) {
+                    console.log("Triggering Animation for:", player.name);
+                    setSoldAnimationData({
+                        team: winningTeam,
+                        player: player,
+                        price: player.soldPrice
+                    });
+                    setShowSoldAnimation(true);
+                }
+            }
+        });
     }
-  }, [recentSold, teams, soldAnimationData?.player?.id]);
+  }, [recentSold, teams]);
+
+  // Initialize the processed set on mount with existing sold players so we don't animate them on refresh
+  useEffect(() => {
+      recentSold.forEach(p => processedPlayerIds.current.add(p.id));
+  }, []); // Run once on mount
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
@@ -142,7 +145,7 @@ const Dashboard: React.FC = () => {
             {currentPlayer ? (
                 <>
                     {/* LEFT CONTENT (Text & Stats) */}
-                    <div className="relative w-full md:w-[50%] h-full p-8 md:p-10 flex flex-col justify-between z-10">
+                    <div className="relative w-full md:w-[60%] h-full p-8 md:p-10 flex flex-col justify-between z-10">
                         
                         {/* Header Info */}
                         <div className="space-y-4">
@@ -188,7 +191,7 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* RIGHT CONTENT - IMAGE */}
-                    <div className="relative md:absolute bottom-0 -right-16 w-full md:w-[65%] h-[400px] md:h-[115%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
+                    <div className="relative md:absolute bottom-0 right-0 w-full md:w-[50%] h-[400px] md:h-[95%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
                         {currentPlayer.imageUrl ? (
                              <img 
                                 src={currentPlayer.imageUrl} 

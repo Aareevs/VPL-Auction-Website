@@ -34,7 +34,8 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2a/Royal_Challengers_Bangalore_2020.svg/1200px-Royal_Challengers_Bangalore_2020.svg.png'
+// RCB
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d4/Royal_Challengers_Bengaluru_Logo.svg/250px-Royal_Challengers_Bengaluru_Logo.svg.png'
   },
   {
     id: 't4',
@@ -56,7 +57,8 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/e/eb/Sunrisers_Hyderabad.svg'
+    // SRH
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/5/51/Sunrisers_Hyderabad_Logo.svg'
   },
   {
     id: 't6',
@@ -67,7 +69,8 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/2/2f/Delhi_Capitals_Logo.svg'
+    // DC
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/2/2f/Delhi_Capitals.svg'
   },
   {
     id: 't7',
@@ -89,7 +92,8 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/1/1c/Punjab_Kings_logo_2021.svg'
+    // PBKS
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/d/d4/Punjab_Kings_Logo.svg'
   },
   {
     id: 't9',
