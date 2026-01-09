@@ -94,8 +94,23 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   const fetchInitialData = async () => {
-    const { data: playersData } = await supabase.from('players').select('*').order('set_no', { ascending: true });
-    if (playersData) setPlayers(playersData.map(transformPlayerFromDB));
+    const { data: playersData, error } = await supabase.from('players').select('*').order('set_no', { ascending: true });
+    
+    if (error) {
+        console.error("Error fetching players:", error);
+        return;
+    }
+
+    if (playersData) {
+        // Sort specifically by the ID suffix (s1-2 vs s1-10) to keep original order
+        const sorted_players = playersData.map(transformPlayerFromDB).sort((a, b) => {
+            if (a.set !== b.set) return a.set - b.set;
+            // Parse "s1-2" -> 2, "s1-10" -> 10
+            const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
+            return getNum(a.id) - getNum(b.id);
+        });
+        setPlayers(sorted_players);
+    }
 
     const { data: auctionData } = await supabase.from('auction_state').select('*').single();
     if (auctionData) setAuctionState(auctionData);
@@ -138,19 +153,29 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const startAuction = async (playerId: string) => {
+      console.log("Starting auction for:", playerId);
+      
       // 1. Update Player status
-      await supabase.from('players').update({ status: PlayerStatus.ON_AUCTION }).eq('id', playerId);
+      const { error: playerError } = await supabase.from('players').update({ status: PlayerStatus.ON_AUCTION }).eq('id', playerId);
+      if (playerError) {
+          alert("Error updating player status: " + playerError.message);
+          return;
+      }
       
       // 2. Update Auction State
       const player = players.find(p => p.id === playerId);
-      await supabase.from('auction_state').update({
+      const { error: auctionError } = await supabase.from('auction_state').update({
           current_player_id: playerId,
           status: 'bidding',
           current_bid: player?.basePrice || 0,
           current_bidder_team_id: null
       }).eq('id', 1);
 
-      setBidHistory([]);
+      if (auctionError) {
+          alert("Error starting auction: " + auctionError.message);
+      } else {
+          setBidHistory([]);
+      }
   };
 
   const placeBid = async (teamId: string, amount: number) => {
