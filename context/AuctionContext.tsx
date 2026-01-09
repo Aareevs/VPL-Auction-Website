@@ -58,9 +58,12 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       .channel('public:players')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
         if (payload.eventType === 'UPDATE') {
-          setPlayers(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+          // KEY FIX: Transform the raw DB row (snake_case) to our Player object (camelCase)
+          const updatedPlayer = transformPlayerFromDB(payload.new);
+          setPlayers(prev => prev.map(p => p.id === payload.new.id ? updatedPlayer : p));
         } else if (payload.eventType === 'INSERT') {
-          setPlayers(prev => [...prev, payload.new as Player]);
+          const newPlayer = transformPlayerFromDB(payload.new);
+          setPlayers(prev => [...prev, newPlayer]);
         }
       })
       .subscribe();
