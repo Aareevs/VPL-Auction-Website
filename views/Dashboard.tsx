@@ -81,14 +81,22 @@ const Dashboard: React.FC = () => {
     // Check if we have a recently sold player
     if (recentSold.length > 0) {
         const latestSold = recentSold[0];
+        console.log("Latest Sold:", latestSold);
+        console.log("Current Animation Data:", soldAnimationData);
         
         // Only trigger if:
         // 1. It's a SOLD player (not PASSED)
         // 2. We haven't shown animation for this specific player yet (check ID)
         // 3. We have team data
-        if (latestSold.status === PlayerStatus.SOLD && latestSold.id !== soldAnimationData?.player?.id) {
+        const isSold = latestSold.status === PlayerStatus.SOLD;
+        const isNew = latestSold.id !== soldAnimationData?.player?.id;
+        console.log("Is Sold:", isSold, "Is New:", isNew);
+
+        if (isSold && isNew) {
              const winningTeam = teams.find(t => t.id === latestSold.teamId);
+             console.log("Winning Team:", winningTeam);
              if (winningTeam && latestSold.soldPrice) {
+                 console.log("TRIGGERING ANIMATION!");
                  setSoldAnimationData({
                      team: winningTeam,
                      player: latestSold,
