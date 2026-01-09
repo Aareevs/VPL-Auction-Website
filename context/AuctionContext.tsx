@@ -170,29 +170,40 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const startAuction = async (playerId: string) => {
-      console.log("Starting auction for:", playerId);
-      
-      // 1. Update Player status
-      const { error: playerError } = await supabase.from('players').update({ status: PlayerStatus.ON_AUCTION }).eq('id', playerId);
-      if (playerError) {
-          alert("Error updating player status: " + playerError.message);
+      const player = players.find(p => p.id === playerId);
+      if (!player) {
+          alert("Player not found!");
           return;
       }
       
-      // 2. Update Auction State
-      const player = players.find(p => p.id === playerId);
-      const { error: auctionError } = await supabase.from('auction_state').update({
-          current_player_id: playerId,
-          status: 'bidding',
-          current_bid: player?.basePrice || 0,
-          current_bidder_team_id: null
-      }).eq('id', 1);
+      // Update Player status
+      const { error: playerError } = await supabase
+          .from('players')
+          .update({ status: PlayerStatus.ON_AUCTION })
+          .eq('id', playerId);
+      
+      if (playerError) {
+          alert("Failed to update player: " + playerError.message);
+          return;
+      }
+      
+      // Update Auction State - use UPSERT to handle missing row
+      const { error: auctionError } = await supabase
+          .from('auction_state')
+          .upsert({
+              id: 1,
+              current_player_id: playerId,
+              status: 'bidding',
+              current_bid: player.basePrice,
+              current_bidder_team_id: null
+          }, { onConflict: 'id' });
 
       if (auctionError) {
-          alert("Error starting auction: " + auctionError.message);
-      } else {
-          setBidHistory([]);
+          alert("Failed to start auction: " + auctionError.message);
+          return;
       }
+      
+      setBidHistory([]);
   };
 
   const placeBid = async (teamId: string, amount: number) => {
