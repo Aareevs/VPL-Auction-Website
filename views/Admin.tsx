@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { PlayerStatus, Player } from '../types';
-import { formatCurrency } from '../constants';
+import { formatCurrency, SET_NAMES } from '../constants';
 import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -158,7 +158,7 @@ const Admin: React.FC = () => {
                     </div>
                     
                     <div className="mb-6">
-                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">Set {currentPlayer.set} | On The Block</span>
+                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">Set {currentPlayer.set} - {SET_NAMES[currentPlayer.set]} | On The Block</span>
                         <h2 className="text-4xl text-white font-bold display-font">{currentPlayer.name}</h2>
                         <div className="flex gap-4 text-slate-400 mt-1">
                             <span>Base: {formatCurrency(currentPlayer.basePrice)}</span>
@@ -393,7 +393,7 @@ const Admin: React.FC = () => {
                         <div key={setNum} className="mb-6">
                             <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-slate-800 mb-2 flex items-center gap-2 text-blue-400">
                                 <Layers size={14} />
-                                <span className="font-bold uppercase text-xs tracking-wider">Set {setNum}</span>
+                                <span className="font-bold uppercase text-xs tracking-wider">Set {setNum} - {SET_NAMES[setNum] || ''}</span>
                             </div>
                             <div className="space-y-2">
                             {unsoldPlayers.filter(p => p.set === setNum).map(player => (

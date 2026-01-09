@@ -52,6 +52,76 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
+  },
+  {
+    id: 't6',
+    name: 'Spartan Spirits',
+    shortName: 'SS',
+    primaryColor: '#b91c1c', // Red 700
+    secondaryColor: '#fecaca', // Red 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't7',
+    name: 'Falcon Flyers',
+    shortName: 'FF',
+    primaryColor: '#1d4ed8', // Blue 700
+    secondaryColor: '#bfdbfe', // Blue 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't8',
+    name: 'Ninja Knights',
+    shortName: 'NK',
+    primaryColor: '#15803d', // Green 700
+    secondaryColor: '#bbf7d0', // Green 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't9',
+    name: 'Viking Voyagers',
+    shortName: 'VV',
+    primaryColor: '#a21caf', // Fuchsia 700
+    secondaryColor: '#f5d0fe', // Fuchsia 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't10',
+    name: 'Samurai Strikers',
+    shortName: 'SaS',
+    primaryColor: '#be123c', // Rose 700
+    secondaryColor: '#fecdd3', // Rose 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't11',
+    name: 'Dragon Defenders',
+    shortName: 'DD',
+    primaryColor: '#c2410c', // Orange 700
+    secondaryColor: '#fed7aa', // Orange 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
+  },
+  {
+    id: 't12',
+    name: 'Warrior Wolves',
+    shortName: 'WW',
+    primaryColor: '#4338ca', // Indigo 700
+    secondaryColor: '#c7d2fe', // Indigo 200
+    totalPurse: INITIAL_PURSE,
+    remainingPurse: INITIAL_PURSE,
+    squad: [],
   }
 ];
 
@@ -80,6 +150,23 @@ const b = (matches: number, wickets: number, bestBowling: string) => ({
     economy: 0,
     age: 0
 });
+
+export const SET_NAMES: Record<number, string> = {
+  1: "Overseas Capped Batters I",
+  2: "Indian Capped Batters",
+  3: "All Rounders I",
+  4: "Capped Indian Bowlers I",
+  5: "Capped Overseas Bowlers I",
+  6: "Wicketkeeper Batsman I",
+  7: "Uncapped Batsman I",
+  8: "All Rounders II",
+  9: "Uncapped Bowlers I",
+  10: "Legends Batsman",
+  11: "Uncapped All Rounders",
+  12: "Legends Bowlers",
+  13: "Uncapped Indian Batsman II",
+  14: "Overseas Batsman II"
+};
 
 export const INITIAL_PLAYERS: Player[] = [
   // SET 1 - Overseas Capped Batters I

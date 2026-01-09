@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Function to fetch the user's profile from the 'profiles' table
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, currentUser?: User) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -41,7 +41,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error fetching profile:', error);
       } else {
-        setProfile(data as UserProfile);
+        const profileData = data as UserProfile;
+        
+        // Auto-sync name if missing in DB but present in Auth
+        if (currentUser && !profileData.full_name) {
+          const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
+          if (fullName) {
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ full_name: fullName })
+              .eq('id', userId);
+            
+            if (!updateError) {
+              profileData.full_name = fullName;
+            }
+          }
+        }
+        
+        setProfile(profileData);
       }
     } catch (err) {
       console.error('Unexpected error fetching profile:', err);
@@ -50,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfile(user.id, user); // Pass user
     }
   };
 
@@ -59,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user); // Pass user
       } else {
         setProfile(null);
       }
@@ -70,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user); // Pass user
       } else {
         setProfile(null);
       }

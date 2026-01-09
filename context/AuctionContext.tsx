@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { Player, Team, Bid, PlayerStatus } from '../types';
-import { INITIAL_PLAYERS, INITIAL_TEAMS } from '../constants';
+import { INITIAL_TEAMS } from '../constants';
 
 interface AuctionContextType {
   teams: Team[];
@@ -12,7 +13,7 @@ interface AuctionContextType {
   
   // Admin Actions
   addPlayer: (player: Player) => void;
-  updatePlayer: (player: Player) => void; // Added updatePlayer
+  updatePlayer: (player: Player) => void;
   startAuction: (playerId: string) => void;
   placeBid: (teamId: string, amount: number) => void;
   sellPlayer: () => void;
@@ -23,121 +24,198 @@ interface AuctionContextType {
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
 
 export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
-  const [players, setPlayers] = useState<Player[]>(INITIAL_PLAYERS);
-  
-  // Auction State
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  const [currentBid, setCurrentBid] = useState<number>(0);
-  const [currentBidTeamId, setCurrentBidTeamId] = useState<string | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
 
-  const currentPlayer = players.find(p => p.id === currentPlayerId) || null;
+  // Derived State
+  const teams = useMemo(() => {
+    return INITIAL_TEAMS.map(team => {
+      const teamPlayers = players.filter(p => p.teamId === team.id);
+      const spent = teamPlayers.reduce((sum, p) => sum + (p.soldPrice || 0), 0);
+      return {
+        ...team,
+        remainingPurse: team.totalPurse - spent,
+        squad: teamPlayers
+      };
+    });
+  }, [players]);
 
-  const addPlayer = (player: Player) => {
-    setPlayers(prev => [...prev, player]);
+  const currentPlayer = useMemo(() => {
+    if (!auctionState?.current_player_id) return null;
+    return players.find(p => p.id === auctionState.current_player_id) || null;
+  }, [players, auctionState]);
+
+  const currentBid = auctionState?.current_bid || 0;
+  const currentBidTeamId = auctionState?.current_bidder_team_id || null;
+
+  // Initial Fetch & Realtime Subscription
+  useEffect(() => {
+    fetchInitialData();
+
+    // Subscribe to Players changes
+    const playerSub = supabase
+      .channel('public:players')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          setPlayers(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+        } else if (payload.eventType === 'INSERT') {
+          setPlayers(prev => [...prev, payload.new as Player]);
+        }
+      })
+      .subscribe();
+
+    // Subscribe to Auction State changes
+    const auctionSub = supabase
+      .channel('public:auction_state')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_state' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          setAuctionState(payload.new);
+          // If the player changed, reset bid history
+          if (payload.old && payload.new.current_player_id !== payload.old.current_player_id) {
+             setBidHistory([]);
+          }
+           // Add to bid history purely on client side for now (transient)
+           if (payload.new.current_bid > (payload.old?.current_bid || 0)) {
+               setBidHistory(prev => [{ 
+                   teamId: payload.new.current_bidder_team_id, 
+                   amount: payload.new.current_bid, 
+                   timestamp: Date.now() 
+               }, ...prev]);
+           }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(playerSub);
+      supabase.removeChannel(auctionSub);
+    };
+  }, []);
+
+  const fetchInitialData = async () => {
+    const { data: playersData } = await supabase.from('players').select('*').order('set_no', { ascending: true });
+    if (playersData) setPlayers(playersData.map(transformPlayerFromDB));
+
+    const { data: auctionData } = await supabase.from('auction_state').select('*').single();
+    if (auctionData) setAuctionState(auctionData);
+  };
+  
+  // Helper to map DB casing if needed (assuming DB uses camelCase or consistent, but verify keys)
+  // Our SQL used snake_case for image_url, etc. Types use camelCase.
+  const transformPlayerFromDB = (p: any): Player => ({
+      ...p,
+      basePrice: p.base_price,
+      soldPrice: p.sold_price,
+      teamId: p.team_id,
+      imageUrl: p.image_url,
+      // stats already jsonb so matches object
+  });
+
+  // Actions
+  const addPlayer = async (player: Player) => {
+     // Admin only - insert to DB
+     // (Using snake_case for DB)
+     await supabase.from('players').insert({
+         id: player.id,
+         name: player.name,
+         country: player.country,
+         role: player.role,
+         base_price: player.basePrice,
+         set_no: player.set,
+         stats: player.stats,
+         status: 'UNSOLD'
+     });
   };
 
-  const updatePlayer = (updatedPlayer: Player) => {
-    setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+  const updatePlayer = async (player: Player) => {
+      await supabase.from('players').update({
+          name: player.name,
+          country: player.country,
+          // ... other fields
+      }).eq('id', player.id);
   };
 
-  const startAuction = (playerId: string) => {
-    const player = players.find(p => p.id === playerId);
-    if (!player) return;
-    
-    // Reset auction state
-    setCurrentPlayerId(playerId);
-    setCurrentBid(player.basePrice);
-    setCurrentBidTeamId(null);
-    setBidHistory([]);
+  const startAuction = async (playerId: string) => {
+      // 1. Update Player status
+      await supabase.from('players').update({ status: PlayerStatus.ON_AUCTION }).eq('id', playerId);
+      
+      // 2. Update Auction State
+      const player = players.find(p => p.id === playerId);
+      await supabase.from('auction_state').update({
+          current_player_id: playerId,
+          status: 'bidding',
+          current_bid: player?.basePrice || 0,
+          current_bidder_team_id: null
+      }).eq('id', 1);
 
-    // Update player status
-    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, status: PlayerStatus.ON_AUCTION } : p));
+      setBidHistory([]);
   };
 
-  const placeBid = (teamId: string, amount: number) => {
+  const placeBid = async (teamId: string, amount: number) => {
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     if (amount > team.remainingPurse) {
       alert(`Insufficient funds! ${team.name} only has ${team.remainingPurse}`);
-      return;
+      return; // Do not proceed
     }
-    if (amount <= currentBid && currentBidTeamId !== null) {
-      // Allow starting bid if no one has bid yet
-       if (currentBidTeamId === null && amount === currentBid) {
-         // allow
-       } else {
-         alert("Bid must be higher than current bid");
-         return;
-       }
-    }
-
-    setCurrentBid(amount);
-    setCurrentBidTeamId(teamId);
-    setBidHistory(prev => [{ teamId, amount, timestamp: Date.now() }, ...prev]);
+    
+    // Optimistic check? Server will just process it. Admin is the one clicking anyway.
+    await supabase.from('auction_state').update({
+        current_bid: amount,
+        current_bidder_team_id: teamId
+    }).eq('id', 1);
   };
 
-  const sellPlayer = () => {
+  const sellPlayer = async () => {
     if (!currentPlayer || !currentBidTeamId) return;
 
-    // Deduct money from team
-    setTeams(prevTeams => prevTeams.map(team => {
-      if (team.id === currentBidTeamId) {
-        return {
-          ...team,
-          remainingPurse: team.remainingPurse - currentBid,
-          squad: [...team.squad, { ...currentPlayer, soldPrice: currentBid, status: PlayerStatus.SOLD, teamId: currentBidTeamId }]
-        };
-      }
-      return team;
-    }));
+    // 1. Update Player (Persistence)
+    // TeamID and SoldPrice are stored in player row
+    await supabase.from('players').update({
+        status: PlayerStatus.SOLD,
+        sold_price: currentBid,
+        team_id: currentBidTeamId
+    }).eq('id', currentPlayer.id);
 
-    // Update player status in global list
-    setPlayers(prevPlayers => prevPlayers.map(p => {
-      if (p.id === currentPlayer.id) {
-        return {
-          ...p,
-          status: PlayerStatus.SOLD,
-          soldPrice: currentBid,
-          teamId: currentBidTeamId
-        };
-      }
-      return p;
-    }));
-
-    // Reset auction state
-    setCurrentPlayerId(null);
-    setCurrentBid(0);
-    setCurrentBidTeamId(null);
-    setBidHistory([]);
+    // 2. Reset Auction State
+    await supabase.from('auction_state').update({
+        current_player_id: null,
+        status: 'waiting',
+        current_bid: 0,
+        current_bidder_team_id: null
+    }).eq('id', 1);
   };
 
-  const passPlayer = () => {
+  const passPlayer = async () => {
     if (!currentPlayer) return;
 
-    setPlayers(prevPlayers => prevPlayers.map(p => {
-      if (p.id === currentPlayer.id) {
-        return { ...p, status: PlayerStatus.PASSED };
-      }
-      return p;
-    }));
-
-    setCurrentPlayerId(null);
-    setCurrentBid(0);
-    setCurrentBidTeamId(null);
-    setBidHistory([]);
+    await supabase.from('players').update({ status: PlayerStatus.PASSED }).eq('id', currentPlayer.id);
+    
+    await supabase.from('auction_state').update({
+        current_player_id: null,
+        status: 'waiting',
+        current_bid: 0,
+        current_bidder_team_id: null
+    }).eq('id', 1);
   };
-  
-  const resetAuction = () => {
-      // Optional: Reset everything for demo
-      if(confirm("Are you sure you want to reset all data?")) {
-        setTeams(INITIAL_TEAMS);
-        setPlayers(INITIAL_PLAYERS);
-        setCurrentPlayerId(null);
-        setCurrentBid(0);
-        setCurrentBidTeamId(null);
-        setBidHistory([]);
+
+  const resetAuction = async () => {
+      if(confirm("DANGER: Reset all auction data?")) {
+          // Reset all players
+          await supabase.from('players').update({
+              status: 'UNSOLD',
+              sold_price: 0,
+              team_id: null
+          }).neq('id', 'placeholder'); // Update all
+
+          // Reset State
+          await supabase.from('auction_state').update({
+            current_player_id: null,
+            status: 'waiting',
+            current_bid: 0,
+            current_bidder_team_id: null
+        }).eq('id', 1);
       }
   }
 
