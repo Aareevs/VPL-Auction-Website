@@ -31,6 +31,7 @@ const Onboarding: React.FC = () => {
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         email: user.email,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
         role: 'admin',
         team_id: null,
         created_at: new Date().toISOString(),
@@ -78,6 +79,7 @@ const Onboarding: React.FC = () => {
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         email: user.email,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
         role: role,
         team_id: role === 'team_member' ? selectedTeam : null,
         created_at: new Date().toISOString(),

@@ -10,6 +10,7 @@ interface UserProfile {
   email: string;
   role: UserRole;
   team_id: string | null;
+  full_name?: string | null;
 }
 
 interface AuthContextType {
