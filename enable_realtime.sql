@@ -1,14 +1,25 @@
 -- ============================================
--- ENABLE REALTIME - Run this to make updates instant
+-- ENABLE REALTIME - Safe Version
 -- ============================================
 
--- This tells Supabase to broadcast changes to the browser in real-time
+BEGIN;
+  -- 1. Enable Realtime for players table (Ignore if already exists)
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'players') THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE players;
+    END IF;
+  END
+  $$;
 
--- 1. Enable Realtime for players table
-ALTER PUBLICATION supabase_realtime ADD TABLE players;
+  -- 2. Enable Realtime for auction_state table (Ignore if already exists)
+  DO $$
+  BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'auction_state') THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE auction_state;
+    END IF;
+  END
+  $$;
+COMMIT;
 
--- 2. Enable Realtime for auction_state table
-ALTER PUBLICATION supabase_realtime ADD TABLE auction_state;
-
--- Done!
 SELECT 'REALTIME ENABLED - Refresh app to see instant updates' as message;
