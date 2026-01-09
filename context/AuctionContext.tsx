@@ -131,8 +131,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Actions
   const addPlayer = async (player: Player) => {
      // Admin only - insert to DB
-     // (Using snake_case for DB)
-     await supabase.from('players').insert({
+     const { error } = await supabase.from('players').insert({
          id: player.id,
          name: player.name,
          country: player.country,
@@ -140,16 +139,31 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
          base_price: player.basePrice,
          set_no: player.set,
          stats: player.stats,
+         image_url: player.imageUrl,
          status: 'UNSOLD'
      });
+     
+     if (error) {
+         alert("Error adding player: " + error.message);
+     }
   };
 
   const updatePlayer = async (player: Player) => {
-      await supabase.from('players').update({
+      const { error } = await supabase.from('players').update({
           name: player.name,
           country: player.country,
-          // ... other fields
+          role: player.role,
+          base_price: player.basePrice,
+          set_no: player.set,
+          stats: player.stats,
+          image_url: player.imageUrl
       }).eq('id', player.id);
+
+      if (error) {
+          alert("Error updating player: " + error.message);
+      } else {
+          alert("Player updated successfully!");
+      }
   };
 
   const startAuction = async (playerId: string) => {
