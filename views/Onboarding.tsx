@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthProvider';
 import { Users, Eye } from 'lucide-react';
 
 const Onboarding: React.FC = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState<'team_member' | 'spectator' | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -17,8 +17,11 @@ const Onboarding: React.FC = () => {
     fetchTeamCounts();
     if (user?.email === 'aareevs@gmail.com') {
       handleAdminOnboarding();
+    } else if (profile?.role) {
+      // If user already has a role, redirect to dashboard (Persistence)
+      navigate('/dashboard');
     }
-  }, [user]);
+  }, [user, profile]);
 
   const handleAdminOnboarding = async () => {
     setLoading(true);
