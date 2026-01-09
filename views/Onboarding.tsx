@@ -15,7 +15,34 @@ const Onboarding: React.FC = () => {
 
   useEffect(() => {
     fetchTeamCounts();
-  }, []);
+    if (user?.email === 'aareevs@gmail.com') {
+      handleAdminOnboarding();
+    }
+  }, [user]);
+
+  const handleAdminOnboarding = async () => {
+    setLoading(true);
+    try {
+      if (!user) return;
+      
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        role: 'admin',
+        team_id: null,
+        created_at: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      await refreshProfile();
+      navigate('/dashboard'); // Direct access to dashboard
+    } catch (error: any) {
+      console.error('Error setting up admin:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchTeamCounts = async () => {
     // Fetch all profiles with a team_id to count members
@@ -73,7 +100,12 @@ const Onboarding: React.FC = () => {
           <p className="text-slate-400 text-lg">Choose how you want to participate</p>
         </div>
 
-        {!role ? (
+        {loading && user?.email === 'aareevs@gmail.com' ? (
+           <div className="text-center">
+             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+             <p className="text-xl text-white">Recognized Admin. Setting up access...</p>
+           </div>
+        ) : !role ? (
           <div className="grid md:grid-cols-2 gap-8">
             <button
               onClick={() => setRole('spectator')}

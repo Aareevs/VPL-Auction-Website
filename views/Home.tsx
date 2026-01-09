@@ -67,12 +67,6 @@ const Home: React.FC = () => {
         {!import.meta.env.VITE_SUPABASE_URL && (
            <div className="mb-6 p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-200 text-sm">
              <strong>Configuration Required:</strong> Supabase credentials are missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment/Vercel settings.
-             <div className="mt-4 p-2 bg-black/50 rounded text-xs font-mono overflow-auto">
-                <p>DEBUG INFO:</p>
-                <p>URL: {String(import.meta.env.VITE_SUPABASE_URL)}</p>
-                <p>Key: {String(import.meta.env.VITE_SUPABASE_ANON_KEY)}</p>
-                <p>Mode: {import.meta.env.MODE}</p>
-             </div>
            </div>
         )}
 
