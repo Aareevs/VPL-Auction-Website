@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { INITIAL_TEAMS } from '../constants';
+import { INITIAL_TEAMS } from '../../constants';
 import { useAuth } from '../context/AuthProvider';
 import { Users, Eye } from 'lucide-react';
 

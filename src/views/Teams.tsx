@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
-import { formatCurrency } from '../constants';
+import { formatCurrency } from '../../constants';
 import { Users, IndianRupee, Shield } from 'lucide-react';
 
 const Teams: React.FC = () => {

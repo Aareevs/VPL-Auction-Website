@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
-import { PlayerStatus, Player } from '../types';
-import { formatCurrency, SET_NAMES } from '../constants';
+import { PlayerStatus, Player } from '../../types';
+import { formatCurrency, SET_NAMES } from '../../constants';
 import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X } from 'lucide-react';
 
 const Admin: React.FC = () => {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuction } from '../context/AuctionContext';
-import { formatCurrency } from '../constants';
+import { formatCurrency } from '../../constants';
 import { Trophy, DollarSign, History, Shield, Globe, UserCheck } from 'lucide-react';
-import { Player, PlayerStatus } from '../types';
+import { Player, PlayerStatus } from '../../types';
 import SoldOverlay from '../components/SoldOverlay';
 
 const getCountryFlag = (country: string) => {

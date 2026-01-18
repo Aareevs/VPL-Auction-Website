@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Gavel } from 'lucide-react';
-import { Player, Team } from '../types';
-import { formatCurrency } from '../constants';
+import { Player, Team } from '../../types';
+import { formatCurrency } from '../../constants';
 
 interface SoldOverlayProps {
     team: Team | undefined;

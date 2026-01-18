@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Player, Team, Bid, PlayerStatus } from '../types';
-import { INITIAL_TEAMS } from '../constants';
+import { Player, Team, Bid, PlayerStatus } from '../../types';
+import { INITIAL_TEAMS } from '../../constants';
 
 interface AuctionContextType {
   teams: Team[];
