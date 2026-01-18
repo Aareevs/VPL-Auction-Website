@@ -30,6 +30,13 @@ The app requires the following environment variables for full functionality:
 - `VITE_SUPABASE_URL` - Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
 
+## Database Setup
+To make the application work, you must run the following SQL in your Supabase SQL Editor:
+1. Copy the consolidated SQL provided in the chat.
+2. Go to your Supabase Dashboard -> SQL Editor.
+3. Paste and Run the SQL.
+4. Enable Realtime for the `players` and `auction_state` tables.
+
 ## Development
 - **Port**: 5000
 - **Command**: `npm run dev`
