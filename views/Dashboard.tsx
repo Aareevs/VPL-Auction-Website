@@ -22,13 +22,18 @@ const getCountryFlag = (country: string) => {
   return '🏳️';
 };
 
+// Import SET_NAMES if not already imported, otherwise define logic to use it.
+import { SET_NAMES } from '../constants'; // Ensure this is imported at top of file
+
 const getStatsToDisplay = (player: Player): { label: string; value: string | number }[] => {
+    // Determine context from Set Name primarily, then Role
+    const setName = SET_NAMES[player.set]?.toLowerCase() || '';
     const role = player.role.toLowerCase();
     const stats = player.stats;
     const list: { label: string; value: string | number }[] = [];
     
-    // 1. All Rounders: Show everything
-    if (role.includes('all') || role.includes('round')) {
+    // 1. All Rounders: Check Set Name OR Role
+    if (setName.includes('all roundER') || setName.includes('all rounders') || role.includes('all') || role.includes('round')) {
         list.push({ label: 'Age', value: stats.age });
         list.push({ label: 'Matches', value: stats.matches });
         list.push({ label: 'Runs', value: stats.runs });
@@ -39,15 +44,15 @@ const getStatsToDisplay = (player: Player): { label: string; value: string | num
         list.push({ label: 'Economy', value: stats.economy || 0 });
         list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
     } 
-    // 2. Bowlers: Specific subset
-    else if (role.includes('bowl')) {
+    // 2. Bowlers: Check Set Name OR Role
+    else if (setName.includes('bowler') || role.includes('bowl') || role.includes('pace') || role.includes('spin')) {
         list.push({ label: 'Age', value: stats.age });
         list.push({ label: 'Matches', value: stats.matches });
         list.push({ label: 'Wickets', value: stats.wickets || 0 });
         list.push({ label: 'Economy', value: stats.economy || 0 });
         list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
     } 
-    // 3. Batters & Wicket Keepers: Specific subset
+    // 3. Batters & Wicket Keepers: Default fallthrough
     else {
         list.push({ label: 'Age', value: stats.age });
         list.push({ label: 'Matches', value: stats.matches });
