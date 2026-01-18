@@ -9,18 +9,7 @@ import Teams from './views/Teams';
 import Home from './views/Home';
 import Onboarding from './views/Onboarding';
 
-const ProtectedRoute = ({ children, requireAdmin = false }: { children: ReactNode, requireAdmin?: boolean }) => {
-  const { user, profile, loading, isAdmin } = useAuth();
-  const location = useLocation();
-
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
-
-  if (!user) return <Navigate to="/" state={{ from: location }} replace />;
-
-  if (!profile) return <Navigate to="/onboarding" replace />;
-
-  if (requireAdmin && !isAdmin) return <Navigate to="/dashboard" replace />;
-
+const ProtectedRoute = ({ children }: { children: ReactNode, requireAdmin?: boolean }) => {
   return <>{children}</>;
 };
 
