@@ -15,7 +15,7 @@ const Onboarding: React.FC = () => {
 
   useEffect(() => {
     fetchTeamCounts();
-    if (user?.email === 'aareevs@gmail.com') {
+    if (user?.email === 'aareevs@gmail.com' || user?.email === 'admin@vpl.com') {
       handleAdminOnboarding();
     } else if (profile?.role) {
       // If user already has a role, redirect to dashboard (Persistence)
@@ -105,7 +105,7 @@ const Onboarding: React.FC = () => {
           <p className="text-slate-400 text-lg">Choose how you want to participate</p>
         </div>
 
-        {loading && user?.email === 'aareevs@gmail.com' ? (
+        {loading && (user?.email === 'aareevs@gmail.com' || user?.email === 'admin@vpl.com') ? (
            <div className="text-center">
              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
              <p className="text-xl text-white">Recognized Admin. Setting up access...</p>

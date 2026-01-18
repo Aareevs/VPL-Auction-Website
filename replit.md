@@ -37,6 +37,15 @@ To make the application work, you must run the following SQL in your Supabase SQ
 3. Paste and Run the SQL.
 4. Enable Realtime for the `players` and `auction_state` tables.
 
+## Admin Access
+To sign in as an admin:
+1. Sign up/Login with the email `admin@vpl.com`.
+2. The system will automatically recognize this email as an admin and redirect you to the Admin Dashboard.
+3. You can also manually set any user as an admin by running the following SQL:
+   ```sql
+   UPDATE profiles SET role = 'admin' WHERE email = 'YOUR_EMAIL@example.com';
+   ```
+
 ## Development
 - **Port**: 5000
 - **Command**: `npm run dev`

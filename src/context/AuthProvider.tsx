@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin' || user?.email === 'aareevs@gmail.com', // Fallback check for bootstrap
+    isAdmin: profile?.role === 'admin' || user?.email === 'aareevs@gmail.com' || user?.email === 'admin@vpl.com', // Fallback check for bootstrap
     signOut,
     refreshProfile
   };
