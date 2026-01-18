@@ -86,6 +86,12 @@ const Dashboard: React.FC = () => {
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
   
   useEffect(() => {
+    // Reset Logic: If the auction is reset (players exist but none are sold), clear the animation memory.
+    // This ensures that if the first player sold in a NEW auction happens to be the same ID as the last one, it still animates.
+    if (players.length > 0 && recentSold.length === 0) {
+        sessionStorage.removeItem('vpl_last_animated_id');
+    }
+
     // Handling Animation Trigger
     // We want the animation to play EXACTLY ONCE per sold player per session.
     // We use sessionStorage to track the 'lastAnimatedPlayerId'.
@@ -119,7 +125,7 @@ const Dashboard: React.FC = () => {
             }
         }
     }
-  }, [recentSold, teams]);
+  }, [recentSold, teams, players]);
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
