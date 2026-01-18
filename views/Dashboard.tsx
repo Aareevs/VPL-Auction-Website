@@ -78,8 +78,23 @@ const Dashboard: React.FC = () => {
   
   // Track IDs of players we've already seen as SOLD/PASSED to avoid re-triggering or missing out-of-order updates
   const processedPlayerIds = React.useRef<Set<string>>(new Set());
+  const isInitialMount = React.useRef(true);
 
   useEffect(() => {
+    // Handling Initial Mount:
+    // If we have data on mount (e.g. navigating back to dashboard), we verify it's history, not a new live event.
+    // We mark all current items as processed so they don't trigger animation.
+    if (isInitialMount.current) {
+        if (recentSold.length > 0) {
+            recentSold.forEach(p => processedPlayerIds.current.add(p.id));
+        }
+        // Only flip this to false if we actually processed something OR if we decide to wait for first data.
+        // Actually, safer to just flip it. If we start empty, we start empty.
+        isInitialMount.current = false;
+        return; 
+    }
+
+    // Normal Live Update Logic:
     // Identify newly sold/passed players by comparing with our ref set
     const newlySold = recentSold.filter(p => !processedPlayerIds.current.has(p.id));
 
@@ -93,7 +108,7 @@ const Dashboard: React.FC = () => {
             if (player.status === PlayerStatus.SOLD) {
                 const winningTeam = teams.find(t => t.id === player.teamId);
                 if (winningTeam && player.soldPrice) {
-                    console.log("Triggering Animation for:", player.name);
+                    // console.log("Triggering Animation for:", player.name);
                     setSoldAnimationData({
                         team: winningTeam,
                         player: player,
@@ -105,11 +120,6 @@ const Dashboard: React.FC = () => {
         });
     }
   }, [recentSold, teams]);
-
-  // Initialize the processed set on mount with existing sold players so we don't animate them on refresh
-  useEffect(() => {
-      recentSold.forEach(p => processedPlayerIds.current.add(p.id));
-  }, []); // Run once on mount
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
