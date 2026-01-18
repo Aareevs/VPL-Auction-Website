@@ -76,48 +76,39 @@ const Dashboard: React.FC = () => {
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
   
-  // Track IDs of players we've already seen as SOLD/PASSED to avoid re-triggering or missing out-of-order updates
-  const processedPlayerIds = React.useRef<Set<string>>(new Set());
-  const isInitialMount = React.useRef(true);
-
   useEffect(() => {
-    // Handling Initial Mount:
-    // If we have data on mount (e.g. navigating back to dashboard), we verify it's history, not a new live event.
-    // We mark all current items as processed so they don't trigger animation.
-    if (isInitialMount.current) {
-        if (recentSold.length > 0) {
-            recentSold.forEach(p => processedPlayerIds.current.add(p.id));
-        }
-        // Only flip this to false if we actually processed something OR if we decide to wait for first data.
-        // Actually, safer to just flip it. If we start empty, we start empty.
-        isInitialMount.current = false;
-        return; 
-    }
-
-    // Normal Live Update Logic:
-    // Identify newly sold/passed players by comparing with our ref set
-    const newlySold = recentSold.filter(p => !processedPlayerIds.current.has(p.id));
-
-    if (newlySold.length > 0) {
-        // We have updates!
-        newlySold.forEach(player => {
-            // Add to processed set immediately so we don't process again
-            processedPlayerIds.current.add(player.id);
-
-            // Trigger animation ONLY if it is a SOLD player
-            if (player.status === PlayerStatus.SOLD) {
-                const winningTeam = teams.find(t => t.id === player.teamId);
-                if (winningTeam && player.soldPrice) {
-                    // console.log("Triggering Animation for:", player.name);
+    // Handling Animation Trigger
+    // We want the animation to play EXACTLY ONCE per sold player per session.
+    // We use sessionStorage to track the 'lastAnimatedPlayerId'.
+    // If we encounter a SOLD player that we haven't animated yet, we trigger it.
+    
+    if (recentSold.length > 0) {
+        const latestSold = recentSold[0];
+        
+        // Only trigger for SOLD players (ignore PASSED)
+        if (latestSold.status === PlayerStatus.SOLD) {
+            const lastAnimatedId = sessionStorage.getItem('vpl_last_animated_id');
+            
+            // If this is a new sold player we haven't seen in this session
+            if (latestSold.id !== lastAnimatedId) {
+                const winningTeam = teams.find(t => t.id === latestSold.teamId);
+                
+                if (winningTeam && latestSold.soldPrice) {
+                    console.log("Triggering Animation for:", latestSold.name);
+                    
                     setSoldAnimationData({
                         team: winningTeam,
-                        player: player,
-                        price: player.soldPrice
+                        player: latestSold,
+                        price: latestSold.soldPrice
                     });
+                    
                     setShowSoldAnimation(true);
+                    
+                    // Mark as animated immediately
+                    sessionStorage.setItem('vpl_last_animated_id', latestSold.id);
                 }
             }
-        });
+        }
     }
   }, [recentSold, teams]);
 
