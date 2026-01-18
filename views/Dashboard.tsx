@@ -27,12 +27,10 @@ const getStatsToDisplay = (player: Player): { label: string; value: string | num
     const stats = player.stats;
     const list: { label: string; value: string | number }[] = [];
     
-    // Common stats
-    list.push({ label: 'Age', value: stats.age });
-    list.push({ label: 'Matches', value: stats.matches });
-
+    // 1. All Rounders: Show everything
     if (role.includes('all') || role.includes('round')) {
-        // All Rounder
+        list.push({ label: 'Age', value: stats.age });
+        list.push({ label: 'Matches', value: stats.matches });
         list.push({ label: 'Runs', value: stats.runs });
         list.push({ label: 'Average', value: stats.avg });
         list.push({ label: 'Strike Rate', value: stats.strikeRate });
@@ -40,13 +38,19 @@ const getStatsToDisplay = (player: Player): { label: string; value: string | num
         list.push({ label: 'Wickets', value: stats.wickets || 0 });
         list.push({ label: 'Economy', value: stats.economy || 0 });
         list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
-    } else if (role.includes('bowl')) {
-        // Bowler
+    } 
+    // 2. Bowlers: Specific subset
+    else if (role.includes('bowl')) {
+        list.push({ label: 'Age', value: stats.age });
+        list.push({ label: 'Matches', value: stats.matches });
         list.push({ label: 'Wickets', value: stats.wickets || 0 });
         list.push({ label: 'Economy', value: stats.economy || 0 });
         list.push({ label: 'Best Bowl', value: stats.bestBowling || 'N/A' });
-    } else {
-        // Batter or Wicket Keeper
+    } 
+    // 3. Batters & Wicket Keepers: Specific subset
+    else {
+        list.push({ label: 'Age', value: stats.age });
+        list.push({ label: 'Matches', value: stats.matches });
         list.push({ label: 'Runs', value: stats.runs });
         list.push({ label: 'Average', value: stats.avg });
         list.push({ label: 'Strike Rate', value: stats.strikeRate });
@@ -182,11 +186,24 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Footer / Base Price */}
+                        {/* Footer / Base Price OR Current Bid */}
                         <div className="mt-auto">
-                            <div className="text-red-500 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide">
-                                BASE PRICE : <span className="text-red-500">{formatCurrency(currentPlayer.basePrice)}</span>
-                            </div>
+                            {currentBid > 0 ? (
+                                <div>
+                                    <div className="text-yellow-400 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide animate-pulse">
+                                        CURRENT BID : <span className="text-white">{formatCurrency(currentBid)}</span>
+                                    </div>
+                                    {holdingTeam && (
+                                        <div className="text-sm font-bold text-slate-400 mt-1 flex items-center gap-2">
+                                            HELD BY: <span style={{ color: holdingTeam.primaryColor }} className="text-lg uppercase tracking-wider">{holdingTeam.name}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="text-red-500 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide">
+                                    BASE PRICE : <span className="text-red-500">{formatCurrency(currentPlayer.basePrice)}</span>
+                                </div>
+                            )}
                         </div>
 
                     </div>
@@ -204,21 +221,7 @@ const Dashboard: React.FC = () => {
                         )}
                     </div>
 
-                    {/* LIVE BID OVERLAY */}
-                    <div className="absolute top-4 right-4 md:right-6 z-20">
-                         <div className="bg-slate-950/80 backdrop-blur-md border border-yellow-500/50 rounded-xl p-4 shadow-xl min-w-[200px] md:min-w-[240px] text-center">
-                             <div className="text-yellow-500 text-xs font-bold uppercase tracking-widest mb-1 animate-pulse">Current Bid</div>
-                             <div className="text-5xl text-white font-bold display-font">
-                                 {currentBid > 0 ? formatCurrency(currentBid) : "---"}
-                             </div>
-                             {holdingTeam && (
-                                 <div className="mt-2 text-xs font-bold text-slate-300 border-t border-slate-700 pt-2 flex items-center justify-center gap-2">
-                                     <span>HELD BY:</span>
-                                     <span style={{ color: holdingTeam.primaryColor }} className="text-sm">{holdingTeam.name}</span>
-                                 </div>
-                             )}
-                         </div>
-                    </div>
+                    {/* LIVE BID OVERLAY - REMOVED (Merged into Footer) */}
                 </>
             ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-12 relative z-10">
