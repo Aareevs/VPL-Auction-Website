@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { PlayerStatus, Player } from '../types';
 import { formatCurrency, SET_NAMES } from '../constants';
-import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X } from 'lucide-react';
+import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2 } from 'lucide-react';
 
 const Admin: React.FC = () => {
   const { 
@@ -17,7 +17,8 @@ const Admin: React.FC = () => {
     placeBid, 
     sellPlayer, 
     passPlayer,
-    resetAuction
+    resetAuction,
+    deletePlayer
   } = useAuction();
 
   // Form State
@@ -46,7 +47,7 @@ const Admin: React.FC = () => {
 
   // Group unsold players by set
   const unsoldPlayers = players.filter(p => p.status === PlayerStatus.UNSOLD);
-  const sets = [...new Set(unsoldPlayers.map(p => p.set))].sort((a, b) => a - b);
+  const sets = [...new Set(unsoldPlayers.map(p => p.set))].sort((a: number, b: number) => a - b);
 
   const resetForm = () => {
       setEditingPlayerId(null);
@@ -66,6 +67,12 @@ const Admin: React.FC = () => {
       setStatsBestBowling('');
       setStatsAge(0);
   }
+// ... (skipping context references) ...
+// Jump to line 396
+                            <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-slate-800 mb-2 flex items-center gap-2 text-blue-400">
+                                <Layers size={14} />
+                                <span className="font-bold uppercase text-xs tracking-wider">Set {setNum} - {SET_NAMES[setNum as number] || ''}</span>
+                            </div>
 
   const handleEditClick = (player: Player) => {
       setEditingPlayerId(player.id);
@@ -412,6 +419,17 @@ const Admin: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => {
+                                                if(confirm(`Are you sure you want to PERMANENTLY delete ${player.name}?`)) {
+                                                    deletePlayer(player.id);
+                                                }
+                                            }}
+                                            className="bg-red-900/50 hover:bg-red-800 text-red-200 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Delete Player"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
                                         <button 
                                             onClick={() => handleEditClick(player)}
                                             className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"

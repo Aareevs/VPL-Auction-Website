@@ -19,6 +19,7 @@ interface AuctionContextType {
   sellPlayer: () => void;
   passPlayer: () => void;
   resetAuction: () => void;
+  deletePlayer: (playerId: string) => void;
 }
 
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
@@ -64,6 +65,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         } else if (payload.eventType === 'INSERT') {
           const newPlayer = transformPlayerFromDB(payload.new);
           setPlayers(prev => [...prev, newPlayer]);
+        } else if (payload.eventType === 'DELETE') {
+          setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
         }
       })
       .subscribe();
@@ -166,6 +169,22 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
           alert("Error updating player: " + error.message);
       } else {
           alert("Player updated successfully!");
+      }
+  };
+
+  const deletePlayer = async (playerId: string) => {
+      const { error } = await supabase.from('players').delete().eq('id', playerId);
+
+      if (error) {
+          alert("Error deleting player: " + error.message);
+      } else {
+          // Optimistically remove from state or rely on realtime subscription
+          // The insert/update subscriptions handled array changes, but delete needs one too
+          // However, our realtime 'postgres_changes' listener for event '*' covers DELETE.
+          // Let's check that logic.
+          // Correct, lines 59-68 handle UPDATE and INSERT. We need to handle DELETE there too.
+          // For now, let's just alert.
+          alert("Player deleted successfully!");
       }
   };
 
@@ -287,7 +306,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       placeBid,
       sellPlayer,
       passPlayer,
-      resetAuction
+      resetAuction,
+      deletePlayer
     }}>
       {children}
     </AuctionContext.Provider>
