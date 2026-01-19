@@ -5,6 +5,8 @@ import { INITIAL_TEAMS } from '../constants';
 import { useAuth } from '../context/AuthProvider';
 import { Users, Eye } from 'lucide-react';
 
+const ADMIN_EMAILS = ['aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com'];
+
 const Onboarding: React.FC = () => {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -15,7 +17,7 @@ const Onboarding: React.FC = () => {
 
   useEffect(() => {
     fetchTeamCounts();
-    if (user?.email === 'aareevs@gmail.com') {
+    if (user?.email && ADMIN_EMAILS.includes(user.email)) {
       handleAdminOnboarding();
     } else if (profile?.role) {
       // If user already has a role, redirect to dashboard (Persistence)

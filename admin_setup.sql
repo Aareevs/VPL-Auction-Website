@@ -1,13 +1,13 @@
--- 1. Immediately update the user if they already exist
+-- 1. Immediately update the users if they already exist
 UPDATE profiles
 SET role = 'admin', team_id = NULL
-WHERE email = 'aareevs@gmail.com';
+WHERE email IN ('aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com');
 
--- 2. Create a function to automatically make this email an admin on insert/update
+-- 2. Create a function to automatically make these emails an admin on insert/update
 CREATE OR REPLACE FUNCTION force_admin_role()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.email = 'aareevs@gmail.com' THEN
+  IF NEW.email IN ('aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com') THEN
     NEW.role := 'admin';
     NEW.team_id := NULL; -- Admins shouldn't be on a team
   END IF;
@@ -27,6 +27,8 @@ EXECUTE FUNCTION force_admin_role();
 -- For example, allowing admins to bypass team limits or view all data.
 
 -- Allow admins to update any profile (e.g. to kick people)
+-- Allow admins to update any profile (e.g. to kick people)
+DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
 CREATE POLICY "Admins can update all profiles"
 ON profiles
 FOR UPDATE
@@ -35,6 +37,7 @@ USING (
 );
 
 -- Allow admins to delete profiles
+DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
 CREATE POLICY "Admins can delete profiles"
 ON profiles
 FOR DELETE
