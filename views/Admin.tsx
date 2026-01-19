@@ -69,10 +69,7 @@ const Admin: React.FC = () => {
   }
 // ... (skipping context references) ...
 // Jump to line 396
-                            <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-slate-800 mb-2 flex items-center gap-2 text-blue-400">
-                                <Layers size={14} />
-                                <span className="font-bold uppercase text-xs tracking-wider">Set {setNum} - {SET_NAMES[setNum as number] || ''}</span>
-                            </div>
+
 
   const handleEditClick = (player: Player) => {
       setEditingPlayerId(player.id);
