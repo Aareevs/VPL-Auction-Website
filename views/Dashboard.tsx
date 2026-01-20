@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatCurrency } from '../constants';
-import { Trophy, DollarSign, History, Shield, Globe, UserCheck } from 'lucide-react';
+import { Trophy, DollarSign, History, Shield, Globe, UserCheck, Users } from 'lucide-react';
 import TeamDetailModal from '../components/TeamDetailModal';
 import { Player, PlayerStatus, Team } from '../types';
 import SoldOverlay from '../components/SoldOverlay';
