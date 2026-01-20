@@ -89,26 +89,37 @@ const Dashboard: React.FC = () => {
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
+  // 1. Reset Logic
   useEffect(() => {
-    // Reset Logic: If the auction is reset (players exist but none are sold), clear the animation memory.
     if (players.length > 0 && players.every(p => p.status === 'UNSOLD')) {
         sessionStorage.removeItem('vpl_last_animated_id');
-                    
-                    setSoldAnimationData({
-                        team: winningTeam,
-                        player: latestSold,
-                        price: latestSold.soldPrice
-                    });
-                    
-                    setShowSoldAnimation(true);
-                    
-                    // Mark as animated immediately
-                    sessionStorage.setItem('vpl_last_animated_id', latestSold.id);
-                }
-            }
-        }
+        sessionStorage.removeItem('vpl_last_unsold_id');
     }
-  }, [recentSold, teams, players]);
+  }, [players]);
+
+  // 2. Animation Trigger
+  useEffect(() => {
+     if (currentPlayer?.status === PlayerStatus.SOLD) {
+         const lastAnimated = sessionStorage.getItem('vpl_last_animated_id');
+         if (lastAnimated !== currentPlayer.id) {
+             const team = teams.find(t => t.id === currentPlayer.teamId);
+             setSoldAnimationData({
+                 team, 
+                 player: currentPlayer, 
+                 price: currentPlayer.soldPrice || 0
+             });
+             setShowSoldAnimation(true);
+             sessionStorage.setItem('vpl_last_animated_id', currentPlayer.id);
+         }
+     } else if (currentPlayer?.status === PlayerStatus.PASSED) {
+         const lastUnsold = sessionStorage.getItem('vpl_last_unsold_id');
+         if (lastUnsold !== currentPlayer.id) {
+             console.log("Triggering Unsold Animation for", currentPlayer.name);
+             setShowUnsoldAnimation(true);
+             sessionStorage.setItem('vpl_last_unsold_id', currentPlayer.id);
+         }
+     }
+  }, [currentPlayer, teams]);
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
