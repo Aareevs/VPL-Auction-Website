@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatCurrency } from '../constants';
 import { Trophy, DollarSign, History, Shield, Globe, UserCheck } from 'lucide-react';
-import { Player, PlayerStatus } from '../types';
+import TeamDetailModal from '../components/TeamDetailModal';
+import { Player, PlayerStatus, Team } from '../types';
 import SoldOverlay from '../components/SoldOverlay';
+import UnsoldOverlay from '../components/UnsoldOverlay';
 
 const getCountryFlag = (country: string) => {
   const c = country.toLowerCase().trim();
@@ -83,33 +85,14 @@ const Dashboard: React.FC = () => {
       .reverse();
 
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
+  const [showUnsoldAnimation, setShowUnsoldAnimation] = useState(false);
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
   useEffect(() => {
     // Reset Logic: If the auction is reset (players exist but none are sold), clear the animation memory.
-    // This ensures that if the first player sold in a NEW auction happens to be the same ID as the last one, it still animates.
-    if (players.length > 0 && recentSold.length === 0) {
+    if (players.length > 0 && players.every(p => p.status === 'UNSOLD')) {
         sessionStorage.removeItem('vpl_last_animated_id');
-    }
-
-    // Handling Animation Trigger
-    // We want the animation to play EXACTLY ONCE per sold player per session.
-    // We use sessionStorage to track the 'lastAnimatedPlayerId'.
-    // If we encounter a SOLD player that we haven't animated yet, we trigger it.
-    
-    if (recentSold.length > 0) {
-        const latestSold = recentSold[0];
-        
-        // Only trigger for SOLD players (ignore PASSED)
-        if (latestSold.status === PlayerStatus.SOLD) {
-            const lastAnimatedId = sessionStorage.getItem('vpl_last_animated_id');
-            
-            // If this is a new sold player we haven't seen in this session
-            if (latestSold.id !== lastAnimatedId) {
-                const winningTeam = teams.find(t => t.id === latestSold.teamId);
-                
-                if (winningTeam && latestSold.soldPrice) {
-                    console.log("Triggering Animation for:", latestSold.name);
                     
                     setSoldAnimationData({
                         team: winningTeam,
@@ -317,37 +300,51 @@ const Dashboard: React.FC = () => {
              </div>
           </div>
 
-          {/* PURSE STATUS */}
-          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
-             <h3 className="text-white text-lg font-bold display-font mb-4 flex items-center gap-2">
-                <DollarSign size={20} className="text-green-500" />
-                Team Purses
+          {/* PURSE STATUS / TEAMS LIST */}
+          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 max-h-[400px] flex flex-col">
+             <h3 className="text-white text-lg font-bold display-font mb-4 flex items-center gap-2 flex-shrink-0">
+                <Users size={20} className="text-blue-500" />
+                Teams & Squads
              </h3>
-             <div className="space-y-4">
+             <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
                 {teams.map(team => (
-                    <div key={team.id} className="group">
-                        <div className="flex justify-between items-center mb-1">
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center border border-slate-700">
-                                     {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[8px] font-bold text-white">{team.shortName}</div>}
-                                </div>
-                                <span className="text-slate-200 text-sm font-bold">{team.name}</span>
+                    <button 
+                        key={team.id} 
+                        onClick={() => setSelectedTeam(team)}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-950/50 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 transition-all group text-left"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:scale-105 transition-transform">
+                                 {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[10px] font-bold text-white flex items-center justify-center w-full h-full" style={{ background: team.primaryColor }}>{team.shortName}</div>}
                             </div>
-                            <span className="text-white font-mono text-sm font-bold">{formatCurrency(team.remainingPurse)}</span>
+                            <div>
+                                <div className="text-white font-bold text-sm">{team.name}</div>
+                                <div className="text-xs text-slate-400">Purse: <span className="text-green-400 font-mono">{formatCurrency(team.remainingPurse)}</span></div>
+                            </div>
                         </div>
-                        <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/50">
-                            <div 
-                                className="h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(0,0,0,0.3)]" 
-                                style={{ 
-                                    width: `${(team.remainingPurse / team.totalPurse) * 100}%`,
-                                    backgroundColor: team.primaryColor 
-                                }} 
-                            />
+                        <div className="flex flex-col items-end">
+                            <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">{team.squad.length}/25</span>
                         </div>
-                    </div>
+                    </button>
                 ))}
              </div>
           </div>
+        </div>
+
+        {showUnsoldAnimation && currentPlayer && (
+            <UnsoldOverlay 
+                player={currentPlayer}
+                onComplete={() => setShowUnsoldAnimation(false)}
+            />
+        )}
+
+        {/* TEAM DETAIL MODAL */}
+        {selectedTeam && (
+            <TeamDetailModal 
+                team={selectedTeam} 
+                onClose={() => setSelectedTeam(null)} 
+            />
+        )}
 
         </div>
       </div>

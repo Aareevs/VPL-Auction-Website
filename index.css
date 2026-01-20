@@ -138,3 +138,23 @@
 .animate-marquee-down {
   animation: marquee-down 40s linear infinite;
 }
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(3);
+  }
+  10%,
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-stamp {
+  animation: stamp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
