@@ -10,7 +10,7 @@ const Teams: React.FC = () => {
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
+    <div className="min-h-screen bg-slate-950 pt-24 pb-12 px-6 border-4 border-red-500">
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-8">
         
         {/* LEFT SIDEBAR - TEAM LIST */}
