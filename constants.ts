@@ -174,12 +174,12 @@ export const SET_NAMES: Record<number, string> = {
   6: "Wicketkeeper Batsman I",
   7: "Uncapped Batsman I",
   8: "All Rounders II",
-  9: "Uncapped Bowlers I",
+  9: "Retired Bowlers",
   10: "Legends Batsman",
   11: "Legends All Rounders",
   12: "Legends Bowlers",
   13: "Uncapped Indian Batsman II",
-  14: "Overseas Batsman II"
+  14: "Indian Batsman II"
 };
 
 export const INITIAL_PLAYERS: Player[] = [
