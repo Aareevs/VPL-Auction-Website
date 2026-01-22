@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { PlayerStatus, Player } from '../types';
-import { formatCurrency, SET_NAMES } from '../constants';
+import { formatCurrency } from '../constants';
 import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2 } from 'lucide-react';
 
 const Admin: React.FC = () => {
@@ -18,7 +18,10 @@ const Admin: React.FC = () => {
     sellPlayer, 
     passPlayer,
     resetAuction,
-    deletePlayer
+    deletePlayer,
+    sets,
+    createSet,
+    updatePlayerSet
   } = useAuction();
 
   // Form State
@@ -28,7 +31,9 @@ const Admin: React.FC = () => {
   const [newPlayerCountry, setNewPlayerCountry] = useState('India');
   const [newPlayerImage, setNewPlayerImage] = useState('');
   const [newPlayerPrice, setNewPlayerPrice] = useState(20);
-  const [newPlayerSet, setNewPlayerSet] = useState(1);
+  const [newPlayerSet, setNewPlayerSet] = useState(0);
+  const [newSetDialog, setNewSetDialog] = useState(false);
+  const [newSetName, setNewSetName] = useState('');
   
   // Stats
   const [statsAge, setStatsAge] = useState(0);
@@ -47,7 +52,9 @@ const Admin: React.FC = () => {
 
   // Group unsold players by set
   const unsoldPlayers = players.filter(p => p.status === PlayerStatus.UNSOLD);
-  const sets = [...new Set(unsoldPlayers.map(p => p.set))].sort((a: number, b: number) => a - b);
+
+  // Sort sets by display order
+  const sortedSets = [...sets].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const resetForm = () => {
       setEditingPlayerId(null);
@@ -55,7 +62,7 @@ const Admin: React.FC = () => {
       setNewPlayerRole('');
       setNewPlayerCountry('India');
       setNewPlayerPrice(20);
-      setNewPlayerSet(1);
+      setNewPlayerSet(0);
       setNewPlayerImage('');
       setStatsMatches(0);
       setStatsRuns(0);
@@ -145,7 +152,16 @@ const Admin: React.FC = () => {
       placeBid(selectedBidTeam, parseInt(customBidAmount));
       setCustomBidAmount('');
   }
+  
+  const handleCreateSet = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if(!newSetName) return;
+      await createSet(newSetName);
+      setNewSetName('');
+      setNewSetDialog(false);
+  };
 
+  const currentSetName = currentPlayer ? sets.find(s => s.id === currentPlayer?.set)?.name : '';
   return (
     <div className="min-h-screen bg-slate-950 pt-20 pb-12 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -162,7 +178,7 @@ const Admin: React.FC = () => {
                     </div>
                     
                     <div className="mb-6">
-                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">Set {currentPlayer.set} - {SET_NAMES[currentPlayer.set]} | On The Block</span>
+                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">Set {currentPlayer.set} - {currentSetName} | On The Block</span>
                         <h2 className="text-4xl text-white font-bold display-font">{currentPlayer.name}</h2>
                         <div className="flex gap-4 text-slate-400 mt-1">
                             <span>Base: {formatCurrency(currentPlayer.basePrice)}</span>
@@ -245,6 +261,36 @@ const Admin: React.FC = () => {
                       <button onClick={resetForm} className="text-slate-400 hover:text-white"><X size={20} /></button>
                   )}
               </h3>
+              
+              {/* Set Management Toggle */}
+              {!editingPlayerId && (
+                <div className="mb-4 flex justify-end">
+                    <button 
+                        onClick={() => setNewSetDialog(!newSetDialog)}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                        <Layers size={14} /> {newSetDialog ? 'Cancel New Set' : 'Create New Set'}
+                    </button>
+                </div>
+              )}
+
+              {newSetDialog && (
+                   <form onSubmit={handleCreateSet} className="bg-slate-800 p-4 rounded-lg mb-4 border border-blue-500/30">
+                       <label className="block text-slate-400 text-xs mb-1">New Set Name</label>
+                       <div className="flex gap-2">
+                           <input 
+                            type="text" 
+                            className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
+                            placeholder="e.g. Marquee Players"
+                            value={newSetName}
+                            onChange={e => setNewSetName(e.target.value)}
+                            required
+                           />
+                           <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded text-xs font-bold uppercase">Create</button>
+                       </div>
+                   </form>
+              )}
+
               <form onSubmit={handleSavePlayer} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -284,13 +330,16 @@ const Admin: React.FC = () => {
                       <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-slate-400 text-xs mb-1">Set</label>
-                            <input 
-                                type="number" 
+                            <select 
                                 required
-                                className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500 appearance-none"
                                 value={newPlayerSet}
                                 onChange={e => setNewPlayerSet(parseInt(e.target.value))}
-                            />
+                            >
+                                {sortedSets.map(s => (
+                                    <option key={s.id} value={s.id}>{s.id}: {s.name}</option>
+                                ))}
+                            </select>
                           </div>
                           <div>
                             <label className="block text-slate-400 text-xs mb-1">Base (L)</label>
@@ -393,14 +442,18 @@ const Admin: React.FC = () => {
                 {unsoldPlayers.length === 0 ? (
                     <div className="text-slate-500 text-center mt-12">No unsold players remaining.</div>
                 ) : (
-                    sets.map(setNum => (
-                        <div key={setNum} className="mb-6">
+                    sortedSets.map(setObj => {
+                        const setPlayers = unsoldPlayers.filter(p => p.set === setObj.id);
+                        if (setPlayers.length === 0) return null;
+
+                        return (
+                        <div key={setObj.id} className="mb-6">
                             <div className="sticky top-0 bg-slate-900/95 backdrop-blur z-10 py-2 border-b border-slate-800 mb-2 flex items-center gap-2 text-blue-400">
                                 <Layers size={14} />
-                                <span className="font-bold uppercase text-xs tracking-wider">Set {setNum} - {SET_NAMES[setNum] || ''}</span>
+                                <span className="font-bold uppercase text-xs tracking-wider">Set {setObj.id} - {setObj.name}</span>
                             </div>
                             <div className="space-y-2">
-                            {unsoldPlayers.filter(p => p.set === setNum).map(player => (
+                            {setPlayers.map(player => (
                                 <div key={player.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-700 group">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">

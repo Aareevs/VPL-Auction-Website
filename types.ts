@@ -1,3 +1,5 @@
+// ... (existing types)
+
 export enum PlayerStatus {
   UNSOLD = 'UNSOLD',
   ON_AUCTION = 'ON_AUCTION',
@@ -45,4 +47,10 @@ export interface Bid {
   teamId: string;
   amount: number;
   timestamp: number;
+}
+
+export interface AuctionSet {
+  id: number;
+  name: string;
+  display_order?: number;
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Player, Team, Bid, PlayerStatus } from '../types';
+import { Player, Team, Bid, PlayerStatus, AuctionSet } from '../types';
 import { INITIAL_TEAMS } from '../constants';
 
 interface AuctionContextType {
@@ -10,8 +10,11 @@ interface AuctionContextType {
   currentBid: number;
   currentBidTeamId: string | null;
   bidHistory: Bid[];
+  sets: AuctionSet[];
   
   // Admin Actions
+  createSet: (name: string) => Promise<void>;
+  updatePlayerSet: (playerId: string, setId: number) => Promise<void>;
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
   startAuction: (playerId: string) => void;
@@ -25,6 +28,7 @@ interface AuctionContextType {
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
 
 export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [sets, setSets] = useState<AuctionSet[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
@@ -71,6 +75,18 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       })
       .subscribe();
 
+
+
+    // Subscribe to Sets changes
+    const setsSub = supabase
+      .channel('public:auction_sets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_sets' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+             setSets(prev => [...prev, payload.new as AuctionSet].sort((a,b) => (a.display_order||0) - (b.display_order||0)));
+          }
+       })
+      .subscribe();
+
     // Subscribe to Auction State changes
     const auctionSub = supabase
       .channel('public:auction_state')
@@ -95,6 +111,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     return () => {
       supabase.removeChannel(playerSub);
+      supabase.removeChannel(setsSub);
       supabase.removeChannel(auctionSub);
     };
   }, []);
@@ -120,6 +137,13 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const { data: auctionData } = await supabase.from('auction_state').select('*').single();
     if (auctionData) setAuctionState(auctionData);
+
+    const { data: setsData, error: setsError } = await supabase.from('auction_sets').select('*').order('display_order', { ascending: true });
+    if (setsData) {
+        setSets(setsData);
+    } else {
+        // Fallback or empty
+    }
   };
   
   // Helper to map DB casing if needed (assuming DB uses camelCase or consistent, but verify keys)
@@ -292,6 +316,28 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
   }
 
+  const createSet = async (name: string) => {
+    // Generate next display order
+    const nextOrder = sets.length > 0 ? Math.max(...sets.map(s => s.display_order || 0)) + 1 : 0;
+    
+    // Check collision on ID
+    // We let Serial handle ID, but displaying might need reload if realtime fails/is slow
+    const { error } = await supabase.from('auction_sets').insert({
+        name,
+        display_order: nextOrder
+    });
+
+    if (error) alert("Error creating set: " + error.message);
+  };
+
+  const updatePlayerSet = async (playerId: string, setId: number) => {
+      const { error } = await supabase.from('players').update({
+          set_no: setId
+      }).eq('id', playerId);
+
+      if(error) alert("Error moving player: " + error.message);
+  }
+
   return (
     <AuctionContext.Provider value={{
       teams,
@@ -300,6 +346,9 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       currentBid,
       currentBidTeamId,
       bidHistory,
+      sets,
+      createSet,
+      updatePlayerSet,
       addPlayer,
       updatePlayer,
       startAuction,
