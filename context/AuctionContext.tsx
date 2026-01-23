@@ -156,6 +156,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       imageUrl: p.image_url,
       set: p.set_no,
       updatedAt: p.updated_at,
+      displayOrder: p.display_order,
       // stats already jsonb so matches object
   });
 

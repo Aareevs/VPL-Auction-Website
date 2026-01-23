@@ -60,8 +60,7 @@ WITH tier2_list(name, sort_order) AS (
 )
 UPDATE players p
 SET set_no = 1,
-    -- Set updated_at to now + seconds corresponding to sort_order
-    -- This ensures that when sorted by updated_at, they appear in this exact sequence.
-    updated_at = NOW() + (t.sort_order || ' seconds')::interval
+    display_order = t.sort_order,
+    updated_at = NOW()
 FROM tier2_list t
 WHERE p.name = t.name;

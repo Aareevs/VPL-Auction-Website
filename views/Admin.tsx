@@ -444,12 +444,17 @@ const Admin: React.FC = () => {
                         const setPlayers = unsoldPlayers
                             .filter(p => p.set === setObj.id)
                             .sort((a, b) => {
-                                // If updatedAt is missing (old players), treat as oldest (0)
+                                // Priority 1: Display Order (if present)
+                                if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+                                    return a.displayOrder - b.displayOrder;
+                                }
+                                if (a.displayOrder !== undefined) return -1; // Has order comes first
+                                if (b.displayOrder !== undefined) return 1;
+
+                                // Priority 2: Fallback to existing logic (updatedAt or ID)
                                 const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
                                 const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
                                 
-                                // Robust fallback for specific players like Ibrahim Zadran
-                                // If time is same (both 0), fallback to ID parsing to match initial load
                                 if (timeA === timeB) {
                                     const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
                                     return getNum(a.id) - getNum(b.id);

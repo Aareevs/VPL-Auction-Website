@@ -19,6 +19,7 @@ export interface Player {
   teamId?: string;
   imageUrl?: string;
   updatedAt?: string;
+  displayOrder?: number;
   stats: {
     matches: number;
     runs: number;
