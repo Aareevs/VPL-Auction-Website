@@ -16,6 +16,11 @@ INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
 SELECT 's36-new', 999, 'Ashish Wadekar', 'India', 'All Rounder', 200, 'UNSOLD', '{"matches": 0, "runs": 0, "highScore": "0", "wickets": 0, "bestBowling": "N/A", "avg": 0, "strikeRate": 0, "economy": 0, "age": 0}'
 WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Ashish Wadekar');
 
+-- 3a. Create Rishabh Pant (User Request)
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 't2-new-RP', 999, 'Rishabh Pant', 'India', 'Wicketkeeper Batter', 200, 'UNSOLD', '{"matches": 125, "runs": 3553, "highScore": "128*", "wickets": 0, "bestBowling": "", "avg": 34, "strikeRate": 147, "economy": 0, "age": 27}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Rishabh Pant');
+
 -- 4. Move specific players to Tier 2 (Set 1) with STAGGERED timestamps to enforce order.
 -- We use a CTE to define the order, then join and update.
 
@@ -59,7 +64,7 @@ WITH tier2_list(name, sort_order) AS (
     ('Ashish Wadekar', 36),
     ('Dwayne Bravo', 37),
     ('Deepak Chahar', 38),
-    ('Ryan Rickleton', 39),
+    ('Rishabh Pant', 39),
     ('Shikhar Dhawan', 40),
     ('Glenn Maxwell', 41),
     ('Faf Du Plessis', 42),
