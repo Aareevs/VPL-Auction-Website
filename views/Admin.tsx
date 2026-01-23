@@ -441,7 +441,13 @@ const Admin: React.FC = () => {
                     <div className="text-slate-500 text-center mt-12">No unsold players remaining.</div>
                 ) : (
                     sortedSets.map(setObj => {
-                        const setPlayers = unsoldPlayers.filter(p => p.set === setObj.id);
+                        const setPlayers = unsoldPlayers
+                            .filter(p => p.set === setObj.id)
+                            .sort((a, b) => {
+                                const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                                const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+                                return timeA - timeB;
+                            });
                         if (setPlayers.length === 0) return null;
 
                         return (

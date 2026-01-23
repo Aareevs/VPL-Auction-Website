@@ -155,6 +155,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       teamId: p.team_id,
       imageUrl: p.image_url,
       set: p.set_no,
+      updatedAt: p.updated_at,
       // stats already jsonb so matches object
   });
 
@@ -332,7 +333,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const updatePlayerSet = async (playerId: string, setId: number) => {
       const { error } = await supabase.from('players').update({
-          set_no: setId
+          set_no: setId,
+          updated_at: new Date().toISOString()
       }).eq('id', playerId);
 
       if(error) alert("Error moving player: " + error.message);
