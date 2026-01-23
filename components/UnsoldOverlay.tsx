@@ -11,7 +11,7 @@ const UnsoldOverlay: React.FC<UnsoldOverlayProps> = ({ player, onComplete }) => 
   useEffect(() => {
     const timer = setTimeout(() => {
         onComplete();
-    }, 2000); // Display for 2 seconds
+    }, 3000); // Display for 3 seconds
     return () => clearTimeout(timer);
   }, [onComplete]);
 

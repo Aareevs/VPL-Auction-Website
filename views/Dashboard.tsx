@@ -88,18 +88,27 @@ const Dashboard: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
   // 1. Reset Logic
-  useEffect(() => {
-    if (players.length > 0 && players.every(p => p.status === 'UNSOLD')) {
-        sessionStorage.removeItem('vpl_last_animated_id');
-        sessionStorage.removeItem('vpl_last_unsold_id');
-    }
-  }, [players]);
+  // 1. Reset Logic - Removed as we use local ref for one-time animations now
+  // useEffect(() => { ... }, [players]);
 
-  // 2. Animation Trigger
+  // 2. Animation Trigger (Edge Detection)
+  const prevPlayerRef = React.useRef<{id: string, status: string} | null>(null);
+
   useEffect(() => {
-     if (currentPlayer?.status === PlayerStatus.SOLD) {
-         const lastAnimated = sessionStorage.getItem('vpl_last_animated_id');
-         if (lastAnimated !== currentPlayer.id) {
+     // If no current player, just reset the ref so next player is fresh
+     if (!currentPlayer) {
+         prevPlayerRef.current = null;
+         return;
+     }
+
+     const prev = prevPlayerRef.current;
+     const current = { id: currentPlayer.id, status: currentPlayer.status };
+
+     // Check for transitions
+     if (prev && prev.id === current.id) {
+         // Same player, check status change
+         if (prev.status !== PlayerStatus.SOLD && current.status === PlayerStatus.SOLD) {
+             // Transition to SOLD
              const team = teams.find(t => t.id === currentPlayer.teamId);
              setSoldAnimationData({
                  team, 
@@ -107,16 +116,26 @@ const Dashboard: React.FC = () => {
                  price: currentPlayer.soldPrice || 0
              });
              setShowSoldAnimation(true);
-             sessionStorage.setItem('vpl_last_animated_id', currentPlayer.id);
-         }
-     } else if (currentPlayer?.status === PlayerStatus.PASSED) {
-         const lastUnsold = sessionStorage.getItem('vpl_last_unsold_id');
-         if (lastUnsold !== currentPlayer.id) {
+         } else if (prev.status !== PlayerStatus.PASSED && current.status === PlayerStatus.PASSED) {
+             // Transition to PASSED
              console.log("Triggering Unsold Animation for", currentPlayer.name);
              setShowUnsoldAnimation(true);
-             sessionStorage.setItem('vpl_last_unsold_id', currentPlayer.id);
          }
+     } else {
+         // New player loaded. 
+         // If they load in as SOLD/PASSED immediately (e.g. refresh), we usually DO NOT want to animate 
+         // unless it's a "live" update. The user requested "once and only once". 
+         // If we strictly want "only when event happens", we rely on the transition above.
+         // However, if the context updates fast, we might miss the 'UNSOLD' state?
+         // Usually flow is: UNSOLD -> SOLD.
+         // So prev would be {id: X, status: UNSOLD}, current {id: X, status: SOLD}.
+         
+         // Initial load handling: We update the ref but don't animate.
+         // This prevents "random moment" animations on reload.
      }
+
+     // Update ref
+     prevPlayerRef.current = current;
   }, [currentPlayer, teams]);
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
