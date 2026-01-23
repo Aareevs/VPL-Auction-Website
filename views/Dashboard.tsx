@@ -155,7 +155,7 @@ const Dashboard: React.FC = () => {
             {currentPlayer ? (
                 <>
                     {/* LEFT CONTENT (Text & Stats) */}
-                    <div className="relative w-full md:w-[60%] h-full p-8 md:p-10 flex flex-col justify-between z-10">
+                    <div className={`relative w-full ${currentPlayer.imageUrl ? 'md:w-[60%]' : 'md:w-full'} h-full p-8 md:p-10 flex flex-col justify-between z-10 transition-all duration-300`}>
                         
                         {/* Header Info */}
                         <div className="space-y-4">
@@ -214,17 +214,22 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* RIGHT CONTENT - IMAGE */}
-                    <div className="relative md:absolute bottom-0 right-0 w-full md:w-[50%] h-[400px] md:h-[95%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
-                        {currentPlayer.imageUrl ? (
+                    {currentPlayer.imageUrl && (
+                        <div className="relative md:absolute bottom-0 right-0 w-full md:w-[50%] h-[400px] md:h-[95%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
                              <img 
                                 src={currentPlayer.imageUrl} 
                                 alt={currentPlayer.name} 
                                 className="h-full w-full object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]"
                              />
-                        ) : (
-                             <div className="h-full w-full flex items-center justify-center text-white/10 text-9xl font-bold">?</div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+
+                    {/* No Image Fallback Background Decoration if URL is missing */}
+                    {!currentPlayer.imageUrl && (
+                        <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+                            <Trophy size={400} />
+                        </div>
+                    )}
 
                     {/* LIVE BID OVERLAY - REMOVED (Merged into Footer) */}
                 </>
@@ -284,8 +289,14 @@ const Dashboard: React.FC = () => {
                         
                         return (
                             <div key={player.id} className={`flex items-center gap-4 p-3 rounded-xl border ${isUnsold ? 'bg-red-950/20 border-red-900/50' : 'bg-slate-950/50 border-slate-800/50'}`}>
-                                <div className={`w-12 h-12 rounded-full overflow-hidden border ${isUnsold ? 'border-red-800 opacity-50' : 'border-slate-700 bg-slate-800'}`}>
-                                     {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs">IMG</div>}
+                                <div className={`w-12 h-12 rounded-full overflow-hidden border flex items-center justify-center ${isUnsold ? 'border-red-800 opacity-50 bg-red-900/20' : 'border-slate-700 bg-slate-800'}`}>
+                                     {player.imageUrl ? (
+                                        <img src={player.imageUrl} className="w-full h-full object-cover" />
+                                     ) : (
+                                        <span className={`font-bold text-lg ${isUnsold ? 'text-red-400' : 'text-slate-400'}`}>
+                                            {player.name.charAt(0)}
+                                        </span>
+                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-white font-bold truncate">{player.name}</div>

@@ -2,7 +2,21 @@
 -- This ensures ONLY the players in the list below are in Set 1.
 UPDATE players SET set_no = 999 WHERE set_no = 1;
 
--- 2. Move specific players to Tier 2 (Set 1) with STAGGERED timestamps to enforce order.
+-- 2. Restore Romario Shephard (who was accidentally deleted in Tier 1 migration)
+-- We check if he exists by name; if not, we insert him.
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 's3-1-restored', 999, 'Romario Shephard', 'West Indies', 'All Rounder', 200, 'UNSOLD', '{"matches": 223, "runs": 2443, "highScore": "73*", "wickets": 206, "bestBowling": "4/13", "avg": 0, "strikeRate": 0, "economy": 0, "age": 0}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Romario Shephard');
+
+
+
+-- 3. Restore/Create Ashish Wadekar (User mentioned he is missing)
+-- We check if he exists by name; if not, we insert him.
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 's36-new', 999, 'Ashish Wadekar', 'India', 'All Rounder', 200, 'UNSOLD', '{"matches": 0, "runs": 0, "highScore": "0", "wickets": 0, "bestBowling": "N/A", "avg": 0, "strikeRate": 0, "economy": 0, "age": 0}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Ashish Wadekar');
+
+-- 4. Move specific players to Tier 2 (Set 1) with STAGGERED timestamps to enforce order.
 -- We use a CTE to define the order, then join and update.
 
 WITH tier2_list(name, sort_order) AS (
@@ -61,6 +75,8 @@ WITH tier2_list(name, sort_order) AS (
 UPDATE players p
 SET set_no = 1,
     display_order = t.sort_order,
+    base_price = 300,
+    image_url = NULL,
     updated_at = NOW()
 FROM tier2_list t
 WHERE p.name = t.name;
