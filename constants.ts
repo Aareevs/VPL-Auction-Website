@@ -153,8 +153,8 @@ const b = (matches: number, wickets: number, bestBowling: string) => ({
 
 export const SET_NAMES: Record<number, string> = {
   0: "Tier 1",
-  1: "Overseas Capped Batters I",
-  2: "Indian Capped Batters",
+  1: "Tier 2",
+  2: "Tier 3",
   3: "All Rounders I",
   4: "Capped Indian Bowlers I",
   5: "Capped Overseas Bowlers I",

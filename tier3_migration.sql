@@ -171,6 +171,21 @@ INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
 SELECT 't3-new-33', 999, 'Jaydev Unadkat', 'India', 'Left Arm Fast Medium', 100, 'UNSOLD', '{"matches": 185, "runs": 0, "highScore": "", "wickets": 218, "bestBowling": "5/25", "avg": 28, "strikeRate": 20, "economy": 8.8, "age": 32}'
 WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Jaydev Unadkat');
 
+-- Wriddhiman Saha (User Request)
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 't3-new-34', 999, 'Wriddhiman Saha', 'India', 'Wicketkeeper Batter', 100, 'UNSOLD', '{"matches": 250, "runs": 4600, "highScore": "115*", "wickets": 0, "bestBowling": "", "avg": 25, "strikeRate": 130, "economy": 0, "age": 39}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Wriddhiman Saha');
+
+-- Rahul Tripathi (User Request)
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 't3-new-35', 999, 'Rahul Tripathi', 'India', 'Top Order Batsman', 100, 'UNSOLD', '{"matches": 160, "runs": 3500, "highScore": "93", "wickets": 0, "bestBowling": "", "avg": 27, "strikeRate": 140, "economy": 0, "age": 33}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Rahul Tripathi');
+
+-- Shardul Thakur (User Request)
+INSERT INTO players (id, set_no, name, country, role, base_price, status, stats)
+SELECT 't3-new-36', 999, 'Shardul Thakur', 'India', 'Right Arm Fast Medium', 100, 'UNSOLD', '{"matches": 150, "runs": 850, "highScore": "68", "wickets": 190, "bestBowling": "4/19", "avg": 28, "strikeRate": 125, "economy": 8.9, "age": 32}'
+WHERE NOT EXISTS (SELECT 1 FROM players WHERE name = 'Shardul Thakur');
+
 -- 3. Move specific players to Tier 3 (Set 2) with explicit display_order
 WITH tier3_list(name, sort_order) AS (
     VALUES
@@ -211,7 +226,12 @@ WITH tier3_list(name, sort_order) AS (
     ('Nitesh Rana', 35),
     ('Karun Nair', 36),
     ('Harshal Patel', 37),
-    ('Jaydev Unadkat', 38)
+    ('Jaydev Unadkat', 38),
+    ('Manish Pandey', 39),
+    ('Mohit Sharma', 40),
+    ('Shardul Thakur', 41),
+    ('Wriddhiman Saha', 42),
+    ('Rahul Tripathi', 43)
 )
 UPDATE players p
 SET set_no = 2,
