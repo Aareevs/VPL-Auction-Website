@@ -42,6 +42,7 @@ export const INITIAL_TEAMS: Team[] = [
     shortName: 'T14',
     primaryColor: '#F7A721',
     secondaryColor: '#000000',
+    logoUrl: '/teams/team1404_logo.png',
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
