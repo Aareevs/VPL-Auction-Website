@@ -85,6 +85,7 @@ const Dashboard: React.FC = () => {
   const [showSoldAnimation, setShowSoldAnimation] = useState(false);
   const [showUnsoldAnimation, setShowUnsoldAnimation] = useState(false);
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
+  const [unsoldAnimationData, setUnsoldAnimationData] = useState<Player | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
   // 1. Reset Logic
@@ -119,6 +120,7 @@ const Dashboard: React.FC = () => {
          } else if (prev.status !== PlayerStatus.PASSED && current.status === PlayerStatus.PASSED) {
              // Transition to PASSED
              console.log("Triggering Unsold Animation for", currentPlayer.name);
+             setUnsoldAnimationData(currentPlayer);
              setShowUnsoldAnimation(true);
          }
      } else {
@@ -370,9 +372,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {showUnsoldAnimation && currentPlayer && (
+        {showUnsoldAnimation && unsoldAnimationData && (
             <UnsoldOverlay 
-                player={currentPlayer}
+                player={unsoldAnimationData}
                 onComplete={() => setShowUnsoldAnimation(false)}
             />
         )}

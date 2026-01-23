@@ -89,7 +89,6 @@ const Teams: React.FC = () => {
                                  <h1 className="text-4xl md:text-5xl font-bold text-white display-font mb-2">{selectedTeam.name}</h1>
                                  <div className="flex items-center gap-4 text-slate-400 font-mono text-sm">
                                      <span className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">Team ID: {selectedTeam.shortName}</span>
-                                     <span className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">Captain: Coming Soon</span>
                                  </div>
                              </div>
                          </div>
