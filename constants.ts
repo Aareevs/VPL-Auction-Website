@@ -112,16 +112,6 @@ export const INITIAL_TEAMS: Team[] = [
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],
-  },
-  {
-    id: 't12',
-    name: 'Sniper',
-    shortName: 'SNP',
-    primaryColor: '#4338ca',
-    secondaryColor: '#c7d2fe',
-    totalPurse: INITIAL_PURSE,
-    remainingPurse: INITIAL_PURSE,
-    squad: [],
   }
 ];
 
