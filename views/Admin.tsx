@@ -263,7 +263,6 @@ const Admin: React.FC = () => {
               </h3>
               
               {/* Set Management Toggle */}
-              {!editingPlayerId && (
                 <div className="mb-4 flex justify-end">
                     <button 
                         onClick={() => setNewSetDialog(!newSetDialog)}
@@ -272,7 +271,6 @@ const Admin: React.FC = () => {
                         <Layers size={14} /> {newSetDialog ? 'Cancel New Set' : 'Create New Set'}
                     </button>
                 </div>
-              )}
 
               {newSetDialog && (
                    <form onSubmit={handleCreateSet} className="bg-slate-800 p-4 rounded-lg mb-4 border border-blue-500/30">
@@ -500,7 +498,8 @@ const Admin: React.FC = () => {
                             ))}
                             </div>
                         </div>
-                    ))
+                    )
+                })
                 )}
             </div>
         </div>
