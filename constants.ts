@@ -1,6 +1,6 @@
 import { Player, PlayerStatus, Team } from './types';
 
-export const INITIAL_PURSE = 6000; // 60 Crores
+export const INITIAL_PURSE = 8000; // 80 Crores
 
 export const INITIAL_TEAMS: Team[] = [
   {
