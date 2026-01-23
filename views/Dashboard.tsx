@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatCurrency } from '../constants';
 import { Trophy, DollarSign, History, Shield, Globe, UserCheck, Users } from 'lucide-react';
@@ -87,6 +87,9 @@ const Dashboard: React.FC = () => {
   const [soldAnimationData, setSoldAnimationData] = useState<{team: any, player: any, price: number} | null>(null);
   const [unsoldAnimationData, setUnsoldAnimationData] = useState<Player | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+
+  const handleSoldComplete = useCallback(() => setShowSoldAnimation(false), []);
+  const handleUnsoldComplete = useCallback(() => setShowUnsoldAnimation(false), []);
   
   // 1. Reset Logic
   // 1. Reset Logic - Removed as we use local ref for one-time animations now
@@ -96,49 +99,57 @@ const Dashboard: React.FC = () => {
   const prevPlayerRef = React.useRef<{id: string, status: string} | null>(null);
 
   useEffect(() => {
-     // If no current player, just reset the ref so next player is fresh
-     if (!currentPlayer) {
+     let currentData: {id: string, status: string} | null = null;
+     let playerObj: Player | undefined | null = currentPlayer;
+
+     // Determine the "current" player state to track.
+     // Priority 1: The active player on stage (currentPlayer)
+     if (currentPlayer) {
+         currentData = { id: currentPlayer.id, status: currentPlayer.status };
+     } 
+     // Priority 2: If stage is empty, check if the LAST tracked player has updated status
+     // This handles the race condition where 'current_player_id' is cleared before or simultaneously with the status update.
+     else if (prevPlayerRef.current) {
+         const lastId = prevPlayerRef.current.id;
+         const updatedPlayer = players.find(p => p.id === lastId);
+         if (updatedPlayer) {
+             currentData = { id: updatedPlayer.id, status: updatedPlayer.status };
+             playerObj = updatedPlayer;
+         }
+     }
+
+     if (!currentData) {
          prevPlayerRef.current = null;
          return;
      }
 
      const prev = prevPlayerRef.current;
-     const current = { id: currentPlayer.id, status: currentPlayer.status };
-
-     // Check for transitions
-     if (prev && prev.id === current.id) {
-         // Same player, check status change
-         if (prev.status !== PlayerStatus.SOLD && current.status === PlayerStatus.SOLD) {
-             // Transition to SOLD
-             const team = teams.find(t => t.id === currentPlayer.teamId);
-             setSoldAnimationData({
-                 team, 
-                 player: currentPlayer, 
-                 price: currentPlayer.soldPrice || 0
-             });
-             setShowSoldAnimation(true);
-         } else if (prev.status !== PlayerStatus.PASSED && current.status === PlayerStatus.PASSED) {
-             // Transition to PASSED
-             console.log("Triggering Unsold Animation for", currentPlayer.name);
-             setUnsoldAnimationData(currentPlayer);
-             setShowUnsoldAnimation(true);
+     
+     // Check for transitions ONLY if we are tracking the same player
+     if (prev && prev.id === currentData.id) {
+         if (prev.status !== PlayerStatus.SOLD && currentData.status === PlayerStatus.SOLD) {
+             // SOLD Transition
+             if (playerObj) {
+                 const team = teams.find(t => t.id === playerObj.teamId);
+                 setSoldAnimationData({
+                     team, 
+                     player: playerObj, 
+                     price: playerObj.soldPrice || 0
+                 });
+                 setShowSoldAnimation(true);
+             }
+         } else if (prev.status !== PlayerStatus.PASSED && currentData.status === PlayerStatus.PASSED) {
+             // UNSOLD Transition
+             if (playerObj) {
+                 setUnsoldAnimationData(playerObj);
+                 setShowUnsoldAnimation(true);
+             }
          }
-     } else {
-         // New player loaded. 
-         // If they load in as SOLD/PASSED immediately (e.g. refresh), we usually DO NOT want to animate 
-         // unless it's a "live" update. The user requested "once and only once". 
-         // If we strictly want "only when event happens", we rely on the transition above.
-         // However, if the context updates fast, we might miss the 'UNSOLD' state?
-         // Usually flow is: UNSOLD -> SOLD.
-         // So prev would be {id: X, status: UNSOLD}, current {id: X, status: SOLD}.
-         
-         // Initial load handling: We update the ref but don't animate.
-         // This prevents "random moment" animations on reload.
-     }
-
+     } 
+     
      // Update ref
-     prevPlayerRef.current = current;
-  }, [currentPlayer, teams]);
+     prevPlayerRef.current = currentData;
+  }, [currentPlayer, teams, players]);
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
@@ -151,7 +162,7 @@ const Dashboard: React.FC = () => {
             team={soldAnimationData.team} 
             player={soldAnimationData.player} 
             price={soldAnimationData.price}
-            onComplete={() => setShowSoldAnimation(false)} 
+            onComplete={handleSoldComplete} 
         />
       )}
 
@@ -375,7 +386,7 @@ const Dashboard: React.FC = () => {
         {showUnsoldAnimation && unsoldAnimationData && (
             <UnsoldOverlay 
                 player={unsoldAnimationData}
-                onComplete={() => setShowUnsoldAnimation(false)}
+                onComplete={handleUnsoldComplete}
             />
         )}
 

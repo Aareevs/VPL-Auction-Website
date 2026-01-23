@@ -4,7 +4,7 @@ export const INITIAL_PURSE = 6000; // 60 Crores
 
 export const INITIAL_TEAMS: Team[] = [
   {
-    id: 't2',
+    id: '1',
     name: 'The Dark Knight Riders',
     shortName: 'TDKR',
     primaryColor: '#004BA0',
@@ -15,7 +15,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't3',
+    id: '2',
     name: 'B-1901',
     shortName: 'B19',
     primaryColor: '#EC1C24',
@@ -26,7 +26,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't4',
+    id: '3',
     name: 'Kings XI Vedam',
     shortName: 'KXV',
     primaryColor: '#2E0854',
@@ -37,7 +37,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't5',
+    id: '4',
     name: 'Team 1404',
     shortName: 'T14',
     primaryColor: '#F7A721',
@@ -48,7 +48,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't6',
+    id: '5',
     name: 'Loser',
     shortName: 'LSR',
     primaryColor: '#17479E',
@@ -59,7 +59,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't7',
+    id: '6',
     name: 'Justice League',
     shortName: 'JL',
     primaryColor: '#EA1A85',
@@ -70,7 +70,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't8',
+    id: '7',
     name: 'Alpha Executors',
     shortName: 'AE',
     primaryColor: '#DD1F2D',
@@ -81,7 +81,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't9',
+    id: '8',
     name: 'Kartik Aryan',
     shortName: 'KA',
     primaryColor: '#0084CA',
@@ -92,7 +92,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't10',
+    id: '9',
     name: 'Auction Bullies',
     shortName: 'AB',
     primaryColor: '#1B2133',
@@ -103,7 +103,7 @@ export const INITIAL_TEAMS: Team[] = [
     squad: [],
   },
   {
-    id: 't11',
+    id: '10',
     name: 'MoneyBall Mafia',
     shortName: 'MBM',
     primaryColor: '#c2410c',
