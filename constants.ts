@@ -51,6 +51,7 @@ export const INITIAL_TEAMS: Team[] = [
     shortName: 'LSR',
     primaryColor: '#17479E',
     secondaryColor: '#DC333E',
+    logoUrl: '/teams/loser_logo.png',
     totalPurse: INITIAL_PURSE,
     remainingPurse: INITIAL_PURSE,
     squad: [],

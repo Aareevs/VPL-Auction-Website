@@ -251,12 +251,14 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       setBidHistory([]);
   };
 
-  const placeBid = async (teamId: string, amount: number) => {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return;
-    if (amount > team.remainingPurse) {
-      alert(`Insufficient funds! ${team.name} only has ${team.remainingPurse}`);
-      return; // Do not proceed
+  const placeBid = async (teamId: string | null, amount: number) => {
+    if (teamId) {
+        const team = teams.find(t => t.id === teamId);
+        if (!team) return;
+        if (amount > team.remainingPurse) {
+          alert(`Insufficient funds! ${team.name} only has ${team.remainingPurse}`);
+          return; // Do not proceed
+        }
     }
     
     // Optimistic check? Server will just process it. Admin is the one clicking anyway.
@@ -266,15 +268,30 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }).eq('id', 1);
   };
 
-  const sellPlayer = async () => {
-    if (!currentPlayer || !currentBidTeamId) return;
+  const sellPlayer = async (buyerTeamId?: string) => {
+    if (!currentPlayer) return;
+    
+    const finalTeamId = buyerTeamId || currentBidTeamId;
+    
+    if (!finalTeamId) {
+        alert("No team selected to sell to!");
+        return;
+    }
+    
+    // Final purse check just in case
+    const buyingTeam = teams.find(t => t.id === finalTeamId);
+    if (buyingTeam && buyingTeam.remainingPurse < currentBid) {
+         if(!confirm(`WARNING: ${buyingTeam.name} has only ${buyingTeam.remainingPurse} but bid is ${currentBid}. Proceed?`)) {
+             return;
+         }
+    }
 
     // 1. Update Player (Persistence)
     // TeamID and SoldPrice are stored in player row
     await supabase.from('players').update({
         status: PlayerStatus.SOLD,
         sold_price: currentBid,
-        team_id: currentBidTeamId
+        team_id: finalTeamId
     }).eq('id', currentPlayer.id);
 
     // 2. Reset Auction State

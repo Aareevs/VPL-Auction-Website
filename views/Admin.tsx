@@ -133,23 +133,24 @@ const Admin: React.FC = () => {
   };
 
   const handleQuickBid = (increment: number) => {
-    if (!selectedBidTeam) {
-        alert("Select a team first!");
-        return;
-    }
+    // Allows bidding without team (anonymous) or with team
     let nextBid = 0;
-    if (currentBidTeamId === null) {
-        // First valid bid matches the current displayed price (which is base price)
-        nextBid = currentBid; 
+    if (currentBid === 0) { // Fix: If fresh auction, start from base
+       // Actually base price is usually set as currentBid in startAuction? 
+       // No, startAuction sets current_bid to basePrice.
+       // So currentBid is at least basePrice.
+       nextBid = currentBid + increment;
     } else {
         nextBid = currentBid + increment;
     }
-    placeBid(selectedBidTeam, nextBid);
+    
+    // If user clicked a team, use it. If not, use null (anonymous).
+    placeBid(selectedBidTeam || null, nextBid);
   };
   
   const handleCustomBid = () => {
-      if(!selectedBidTeam || !customBidAmount) return;
-      placeBid(selectedBidTeam, parseInt(customBidAmount));
+      if(!customBidAmount) return;
+      placeBid(selectedBidTeam || null, parseInt(customBidAmount));
       setCustomBidAmount('');
   }
   
@@ -188,18 +189,24 @@ const Admin: React.FC = () => {
 
                     {/* Bidding Controls */}
                     <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800 mb-6">
-                        <label className="block text-slate-400 text-xs uppercase mb-2">Select Bidding Team</label>
+                        <div className="flex items-center justify-between mb-2">
+                             <label className="block text-slate-400 text-xs uppercase">Select Buyer (Optional for Bidding)</label>
+                             {selectedBidTeam && (
+                                 <button onClick={() => setSelectedBidTeam('')} className="text-xs text-red-400 hover:text-red-300">Clear</button>
+                             )}
+                        </div>
                         <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-4">
                             {teams.map(team => (
                                 <button
                                     key={team.id}
                                     onClick={() => setSelectedBidTeam(team.id)}
-                                    disabled={team.remainingPurse < currentBid}
+                                    // Removed disabled check to allow selection even if "insufficient" just in case, but safe to keep warning later
+                                    // disabled={team.remainingPurse < currentBid}
                                     className={`p-2 rounded-lg text-xs font-bold transition-all border ${
                                         selectedBidTeam === team.id
                                         ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/30'
                                         : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                                    } ${team.remainingPurse < currentBid ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                    } ${team.remainingPurse < currentBid ? 'opacity-50' : ''}`}
                                 >
                                     {team.shortName}
                                 </button>
@@ -228,8 +235,8 @@ const Admin: React.FC = () => {
 
                     <div className="flex gap-4">
                         <button 
-                            onClick={sellPlayer}
-                            disabled={!currentBidTeamId}
+                            onClick={() => sellPlayer(selectedBidTeam)}
+                            disabled={!selectedBidTeam && !currentBidTeamId} // Need SOME team
                             className="flex-1 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-xl uppercase tracking-widest shadow-lg shadow-green-900/20"
                         >
                             SOLD
