@@ -14,7 +14,7 @@ WITH tier2_list(name, sort_order) AS (
     ('Shubman Gill', 5),
     ('Tim David', 6),
     ('Ishan Kishan', 7),
-    ('Josh Hazlewood', 8),
+    ('Josh Little', 8),
     ('Hashim Amla', 9),
     ('Marcus Stoinis', 10),
     ('Joe Root', 11),

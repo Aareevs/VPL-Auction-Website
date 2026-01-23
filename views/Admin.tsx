@@ -444,20 +444,17 @@ const Admin: React.FC = () => {
                         const setPlayers = unsoldPlayers
                             .filter(p => p.set === setObj.id)
                             .sort((a, b) => {
-                                // Fallback for missing updatedAt
-                                if (!a.updatedAt && !b.updatedAt) {
-                                    // If both missing, use list index from migration if possible, otherwise ID
-                                    // But we don't have list index here.
-                                    // Let's use ID but log warning
-                                    console.warn("Both missing updatedAt:", a.name, b.name);
-                                    return 0; 
+                                // If updatedAt is missing (old players), treat as oldest (0)
+                                const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+                                const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+                                
+                                // Robust fallback for specific players like Ibrahim Zadran
+                                // If time is same (both 0), fallback to ID parsing to match initial load
+                                if (timeA === timeB) {
+                                    const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
+                                    return getNum(a.id) - getNum(b.id);
                                 }
-                                if (!a.updatedAt) return -1; // Missing comes first? No, last. 
-                                if (!b.updatedAt) return 1;
 
-                                const timeA = new Date(a.updatedAt).getTime();
-                                const timeB = new Date(b.updatedAt).getTime();
-                                // console.log(`Comparing ${a.name} (${timeA}) vs ${b.name} (${timeB})`);
                                 return timeA - timeB;
                             });
                         if (setPlayers.length === 0) return null;
