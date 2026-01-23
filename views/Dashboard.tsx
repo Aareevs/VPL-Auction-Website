@@ -155,10 +155,10 @@ const Dashboard: React.FC = () => {
             {currentPlayer ? (
                 <>
                     {/* LEFT CONTENT (Text & Stats) */}
-                    <div className={`relative w-full ${currentPlayer.imageUrl ? 'md:w-[60%]' : 'md:w-full'} h-full p-8 md:p-10 flex flex-col justify-between z-10 transition-all duration-300`}>
+                    <div className={`relative w-full ${currentPlayer.imageUrl ? 'md:w-[60%] text-left' : 'md:w-full text-center items-center'} h-full p-8 md:p-10 flex flex-col justify-between z-10 transition-all duration-300`}>
                         
                         {/* Header Info */}
-                        <div className="space-y-4">
+                        <div className={`space-y-4 ${!currentPlayer.imageUrl && 'flex flex-col items-center'}`}>
                              <div className="flex items-center gap-3 mb-2">
                                 <span className="text-3xl filter drop-shadow-md">
                                     {getCountryFlag(currentPlayer.country)}
@@ -183,8 +183,8 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         {/* Stats Grid */}
-                        <div className="my-6 flex-grow">
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 border-t-2 border-blue-500/30 pt-4">
+                        <div className="my-6 flex-grow w-full">
+                            <div className={`grid ${currentPlayer.imageUrl ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-x-8 gap-y-4 border-t-2 border-blue-500/30 pt-6`}>
                                 {getStatsToDisplay(currentPlayer).map((stat, index) => (
                                     <StatRow key={index} label={stat.label} value={stat.value} />
                                 ))}
@@ -192,7 +192,7 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         {/* Footer / Base Price OR Current Bid */}
-                        <div className="mt-auto">
+                        <div className={`mt-auto ${!currentPlayer.imageUrl && 'w-full flex justify-center'}`}>
                             {currentBid > 0 ? (
                                 <div>
                                     <div className="text-yellow-400 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide animate-pulse">
