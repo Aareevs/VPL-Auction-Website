@@ -345,7 +345,7 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">{team.squad.length}/25</span>
+                            <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">{team.squad.length}/8</span>
                         </div>
                     </button>
                 ))}

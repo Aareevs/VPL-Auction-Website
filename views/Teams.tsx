@@ -54,7 +54,7 @@ const Teams: React.FC = () => {
                                     {team.name}
                                 </span>
                                 <span className={`text-[10px] uppercase tracking-wider font-bold ${selectedTeamId === team.id ? 'text-blue-200' : 'text-slate-500'}`}>
-                                    {team.squad.length} / 25 Players
+                                    {team.squad.length} / 8 Players
                                 </span>
                             </div>
 
@@ -110,8 +110,8 @@ const Teams: React.FC = () => {
                                 <Users size={80} />
                             </div>
                             <div className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-bold">Squad Strength</div>
-                            <div className="text-4xl text-white font-bold display-font">{selectedTeam.squad.length} <span className="text-lg text-slate-500 font-normal">/ 25</span></div>
-                            <div className="text-xs text-slate-500 mt-2">Min 15 required</div>
+                            <div className="text-4xl text-white font-bold display-font">{selectedTeam.squad.length} <span className="text-lg text-slate-500 font-normal">/ 8</span></div>
+                            <div className="text-xs text-slate-500 mt-2">Min 4 required</div>
                         </div>
                         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
                             <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
