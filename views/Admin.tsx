@@ -208,7 +208,7 @@ const Admin: React.FC = () => {
                                         : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                                     } ${team.remainingPurse < currentBid ? 'opacity-50' : ''}`}
                                 >
-                                    {team.shortName}
+                                    {team.id}
                                 </button>
                             ))}
                         </div>
