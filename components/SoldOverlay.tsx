@@ -11,103 +11,62 @@ interface SoldOverlayProps {
 }
 
 const SoldOverlay: React.FC<SoldOverlayProps> = ({ team, player, price, onComplete }) => {
-    const [phase, setPhase] = useState<'hammer' | 'banner'>('hammer');
-
     useEffect(() => {
-        // Phase 1: Hammer Animation (0-1.2s)
-        const hammerTimer = setTimeout(() => {
-            setPhase('banner');
-        }, 1200);
-
-        // Phase 2: Complete (Total 5s)
-        const completeTimer = setTimeout(() => {
+        const timer = setTimeout(() => {
             onComplete();
-        }, 5000);
-
-        return () => {
-            clearTimeout(hammerTimer);
-            clearTimeout(completeTimer);
-        };
+        }, 4000); // Display for 4 seconds
+        return () => clearTimeout(timer);
     }, [onComplete]);
 
     if (!team) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md animate-fade-in transition-all duration-1000">
             
-            {/* PHASE 1: HAMMER */}
-            {phase === 'hammer' && (
-                <div className="relative flex flex-col items-center justify-center animate-shake">
-                    <div className="animate-hammerSwing origin-bottom-right">
-                        <Gavel size={300} className="text-yellow-500 drop-shadow-[0_0_50px_rgba(234,179,8,0.8)] fill-yellow-500" />
-                    </div>
-                </div>
-            )}
-
-            {/* PHASE 2: BANNER */}
-            {phase === 'banner' && (
-                <div className="w-full max-w-6xl mx-auto px-4 perspective-1000">
-                    <div className="relative overflow-hidden rounded-xl shadow-2xl animate-bannerExpand origin-center transform-gpu border-4 border-yellow-500/50">
-                        
-                        {/* Dynamic Background */}
-                        <div 
-                            className="absolute inset-0 z-0"
-                            style={{ 
-                                background: `linear-gradient(135deg, ${team.primaryColor} 0%, ${team.secondaryColor} 100%)`,
-                                opacity: 0.95 
-                            }} 
-                        />
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30 mix-blend-overlay z-0"></div>
-
-                        {/* Content Container */}
-                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-8 md:p-12 gap-8 text-white min-h-[300px]">
-                            
-                            {/* LEFT: Team Info */}
-                            <div className="flex flex-col items-center md:items-start space-y-4 animate-slideUp delay-100 text-center md:text-left">
-                                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 shadow-xl flex items-center justify-center">
-                                    {team.logoUrl ? (
-                                        <img src={team.logoUrl} alt={team.name} className="w-24 h-24 object-contain" />
-                                    ) : (
-                                        <div className="text-4xl font-black tracking-tighter uppercase font-mono">{team.shortName}</div>
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="text-yellow-300 font-bold tracking-widest uppercase text-sm mb-1">Winning Bid</div>
-                                    <h2 className="text-5xl md:text-7xl font-black display-font drop-shadow-lg">
-                                        {formatCurrency(price)}
-                                    </h2>
-                                </div>
-                            </div>
-
-                            {/* CENTER: Action Text */}
-                            <div className="flex flex-col items-center justify-center animate-zoomIn delay-200">
-                                <span className="text-2xl md:text-3xl font-bold uppercase tracking-[0.5em] text-white/80 mb-2">Sold To</span>
-                                <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.3)] filter text-center py-2 px-6 border-y-2 border-white/30">
-                                    {team.name}
-                                </h1>
-                            </div>
-
-                            {/* RIGHT: Player Info */}
-                            <div className="flex flex-col items-center md:items-end animate-slideUp delay-300">
-                                <div className="relative w-48 h-48 md:w-64 md:h-64 mb-4">
-                                    {/* Glowing ring behind image */}
-                                    <div className="absolute inset-0 rounded-full border-4 border-white/30 animate-pulse"></div>
-                                    <img 
-                                        src={player.imageUrl} 
-                                        alt={player.name}
-                                        className="w-full h-full object-cover rounded-full border-4 border-white shadow-2xl relative z-10 bg-slate-800"
-                                    />
-                                </div>
-                                <div className="text-center md:text-right">
-                                    <div className="text-3xl font-bold">{player.name}</div>
-                                    <div className="text-blue-100 font-mono text-lg">{player.role}</div>
-                                </div>
-                            </div>
-
+            <div className="relative flex flex-col items-center">
+                {/* Player Card (Dimmed) */}
+                <div className="w-64 h-80 bg-slate-800 rounded-2xl border-4 border-slate-700 opacity-80 mb-8 overflow-hidden relative transform scale-110 shadow-2xl">
+                    {player.imageUrl ? (
+                        <img src={player.imageUrl} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-6xl text-slate-600 font-bold">
+                             {player.name.charAt(0)}
                         </div>
+                    )}
+                    <div className="absolute bottom-0 w-full bg-slate-900 p-4 text-center">
+                        <div className="text-xl font-bold text-white">{player.name}</div>
+                        <div className="text-sm text-slate-400">{player.role}</div>
                     </div>
                 </div>
-            )}
+
+                {/* STAMP ANIMATION */}
+                <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] z-10">
+                    <div className="animate-stamp border-[8px] border-green-500 text-green-500 font-black text-6xl md:text-8xl px-8 py-2 uppercase tracking-widest bg-green-900/20 shadow-[0_0_50px_rgba(34,197,94,0.5)] backdrop-blur-none border-dashed-custom whitespace-nowrap">
+                        SOLD
+                    </div>
+                </div>
+
+                {/* Sold Details */}
+                <div className="text-center animate-slideUp delay-300 space-y-2 relative z-20 bg-slate-900/80 p-6 rounded-2xl border border-blue-500/30 backdrop-blur-xl shadow-2xl min-w-[300px]">
+                    <div className="text-slate-400 text-sm uppercase tracking-widest font-bold">Sold To</div>
+                    
+                    <div className="flex items-center justify-center gap-3 my-2">
+                        {team.logoUrl ? (
+                            <img src={team.logoUrl} className="w-12 h-12 object-contain" />
+                        ) : (
+                             <div className="w-10 h-10 rounded flex items-center justify-center text-white font-bold text-xs" style={{ background: team.primaryColor }}>
+                                {team.shortName}
+                             </div>
+                        )}
+                        <div className="text-3xl font-black text-white display-font">{team.name}</div>
+                    </div>
+
+                    <div className="text-green-400 font-mono font-bold text-4xl drop-shadow-lg">
+                        {formatCurrency(price)}
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 };
