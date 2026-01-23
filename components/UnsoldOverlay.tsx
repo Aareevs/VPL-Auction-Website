@@ -11,12 +11,12 @@ const UnsoldOverlay: React.FC<UnsoldOverlayProps> = ({ player, onComplete }) => 
   useEffect(() => {
     const timer = setTimeout(() => {
         onComplete();
-    }, 3000); // Display for 3 seconds
+    }, 2000); // Display for 2 seconds
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md animate-fade-in grayscale transition-all duration-1000">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md animate-fade-in transition-all duration-1000">
        
        <div className="relative flex flex-col items-center">
            {/* Player Card (Grayscale & Dimmed) */}
@@ -32,7 +32,7 @@ const UnsoldOverlay: React.FC<UnsoldOverlayProps> = ({ player, onComplete }) => 
            </div>
 
            {/* STAMP ANIMATION */}
-           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-[-15deg]">
+           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-[-15deg] z-50">
                <div className="animate-stamp border-[8px] border-red-600 text-red-600 font-black text-6xl md:text-9xl px-8 py-2 uppercase tracking-widest bg-red-600/10 shadow-[0_0_50px_rgba(220,38,38,0.5)] backdrop-blur-none border-dashed-custom">
                    UNSOLD
                </div>

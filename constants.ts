@@ -4,16 +4,6 @@ export const INITIAL_PURSE = 6000; // 60 Crores
 
 export const INITIAL_TEAMS: Team[] = [
   {
-    id: 't1',
-    name: 'SuperCell',
-    shortName: 'SC',
-    primaryColor: '#F9CD05',
-    secondaryColor: '#005FAC',
-    totalPurse: INITIAL_PURSE,
-    remainingPurse: INITIAL_PURSE,
-    squad: [],
-  },
-  {
     id: 't2',
     name: 'The Dark Knight Riders',
     shortName: 'TDKR',
