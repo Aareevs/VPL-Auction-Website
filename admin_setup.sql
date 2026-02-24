@@ -1,13 +1,15 @@
--- 1. Immediately update the users if they already exist
+-- 1. Immediately update the primary admin if they already exist
 UPDATE profiles
 SET role = 'admin', team_id = NULL
-WHERE email IN ('aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com');
+WHERE email = 'aareevs@gmail.com';
 
--- 2. Create a function to automatically make these emails an admin on insert/update
+-- 2. Create a function to automatically make admin emails an admin on insert/update
+-- NOTE: This is a bootstrap fallback. The dynamic version (in admin_emails_setup.sql)
+-- checks against the admin_emails table instead.
 CREATE OR REPLACE FUNCTION force_admin_role()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.email IN ('aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com') THEN
+  IF NEW.email = 'aareevs@gmail.com' THEN
     NEW.role := 'admin';
     NEW.team_id := NULL; -- Admins shouldn't be on a team
   END IF;

@@ -3,9 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { INITIAL_TEAMS } from '../constants';
 import { useAuth } from '../context/AuthProvider';
-import { Users, Eye } from 'lucide-react';
 
-const ADMIN_EMAILS = ['aareevs@gmail.com', 'kg3327949@gmail.com', 'divyanshgupta231@gmail.com'];
 
 const Onboarding: React.FC = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -22,10 +20,18 @@ const Onboarding: React.FC = () => {
            return;
        }
 
-       // 2. If Admin
-       if (user.email && ADMIN_EMAILS.includes(user.email)) {
-           await handleAdminOnboarding();
-           return;
+       // 2. Check if email is an admin (from admin_emails table)
+       if (user.email) {
+           const { data } = await supabase
+             .from('admin_emails')
+             .select('email')
+             .eq('email', user.email)
+             .single();
+           
+           if (data) {
+               await handleAdminOnboarding();
+               return;
+           }
        }
 
        // 3. Auto-assign Spectator for everyone else (Bypass UI)

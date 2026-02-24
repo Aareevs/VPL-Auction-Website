@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuction } from '../context/AuctionContext';
+import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
 import { formatCurrency } from '../constants';
-import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail } from 'lucide-react';
+
+interface AdminEmail {
+  id: string;
+  email: string;
+  added_at: string;
+}
 
 const Admin: React.FC = () => {
   const { 
@@ -23,6 +31,107 @@ const Admin: React.FC = () => {
     createSet,
     updatePlayerSet
   } = useAuction();
+
+  const { user } = useAuth();
+
+  // Admin email management state
+  const [adminEmails, setAdminEmails] = useState<AdminEmail[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [adminEmailLoading, setAdminEmailLoading] = useState(false);
+  const [adminEmailError, setAdminEmailError] = useState('');
+  const [adminEmailSuccess, setAdminEmailSuccess] = useState('');
+
+  // Fetch admin emails on mount
+  useEffect(() => {
+    fetchAdminEmails();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('admin_emails_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_emails' }, () => {
+        fetchAdminEmails();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const fetchAdminEmails = async () => {
+    const { data, error } = await supabase
+      .from('admin_emails')
+      .select('*')
+      .order('added_at', { ascending: true });
+    if (!error && data) setAdminEmails(data);
+  };
+
+  const handleAddAdminEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail.trim()) return;
+    
+    setAdminEmailLoading(true);
+    setAdminEmailError('');
+    setAdminEmailSuccess('');
+    
+    try {
+      // Check if already exists
+      const existing = adminEmails.find(a => a.email.toLowerCase() === newAdminEmail.trim().toLowerCase());
+      if (existing) {
+        setAdminEmailError('This email already has admin access.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('admin_emails')
+        .insert({ email: newAdminEmail.trim().toLowerCase() });
+      
+      if (error) throw error;
+      
+      setNewAdminEmail('');
+      setAdminEmailSuccess(`Admin access granted to ${newAdminEmail.trim()}`);
+      setTimeout(() => setAdminEmailSuccess(''), 3000);
+      await fetchAdminEmails();
+    } catch (err: any) {
+      setAdminEmailError(err.message || 'Failed to grant admin access.');
+    } finally {
+      setAdminEmailLoading(false);
+    }
+  };
+
+  const handleRevokeAdmin = async (adminEmail: AdminEmail) => {
+    if (adminEmail.email === user?.email) {
+      setAdminEmailError('You cannot revoke your own admin access.');
+      setTimeout(() => setAdminEmailError(''), 3000);
+      return;
+    }
+    
+    if (!confirm(`Revoke admin access for ${adminEmail.email}?`)) return;
+    
+    setAdminEmailLoading(true);
+    setAdminEmailError('');
+    
+    try {
+      const { error } = await supabase
+        .from('admin_emails')
+        .delete()
+        .eq('id', adminEmail.id);
+      
+      if (error) throw error;
+
+      // Also update their profile role to spectator
+      await supabase
+        .from('profiles')
+        .update({ role: 'spectator' })
+        .eq('email', adminEmail.email);
+      
+      setAdminEmailSuccess(`Admin access revoked for ${adminEmail.email}`);
+      setTimeout(() => setAdminEmailSuccess(''), 3000);
+      await fetchAdminEmails();
+    } catch (err: any) {
+      setAdminEmailError(err.message || 'Failed to revoke admin access.');
+    } finally {
+      setAdminEmailLoading(false);
+    }
+  };
 
   // Form State
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
@@ -426,6 +535,84 @@ const Admin: React.FC = () => {
                       {editingPlayerId ? 'Save Changes' : 'Add Player'}
                   </button>
               </form>
+          </div>
+
+
+          {/* Admin Access Management */}
+          <div className="bg-slate-900 border border-purple-900/50 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+              <Shield size={20} className="text-purple-400" />
+              Admin Access Management
+            </h3>
+            <p className="text-slate-400 text-xs mb-4">Grant or revoke admin access by email. Admin users have full control over the auction dashboard.</p>
+
+            {/* Admin Email List */}
+            <div className="space-y-2 mb-4">
+              {adminEmails.map(ae => (
+                <div key={ae.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      ae.email === user?.email ? 'bg-purple-600/30 text-purple-400' : 'bg-slate-700 text-slate-400'
+                    }`}>
+                      <Mail size={14} />
+                    </div>
+                    <div>
+                      <div className="text-white text-sm font-medium">{ae.email}</div>
+                      <div className="text-[10px] text-slate-500">
+                        Added {new Date(ae.added_at).toLocaleDateString()}
+                        {ae.email === user?.email && <span className="ml-2 text-purple-400 font-bold">(You)</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRevokeAdmin(ae)}
+                    disabled={ae.email === user?.email || adminEmailLoading}
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-red-900/30 text-red-400 hover:bg-red-900/60 hover:text-red-300 border border-red-900/30"
+                    title={ae.email === user?.email ? 'Cannot revoke own access' : 'Revoke admin access'}
+                  >
+                    <ShieldX size={12} /> Revoke
+                  </button>
+                </div>
+              ))}
+              {adminEmails.length === 0 && (
+                <div className="text-slate-500 text-sm text-center py-4">No admin emails configured.</div>
+              )}
+            </div>
+
+            {/* Add Admin Email Form */}
+            <form onSubmit={handleAddAdminEmail} className="flex gap-2">
+              <div className="relative flex-1">
+                <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="email"
+                  placeholder="Enter email to grant admin access..."
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-purple-500 placeholder:text-slate-600"
+                  value={newAdminEmail}
+                  onChange={e => setNewAdminEmail(e.target.value)}
+                  required
+                  disabled={adminEmailLoading}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={adminEmailLoading || !newAdminEmail.trim()}
+                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-900/20"
+              >
+                <ShieldPlus size={14} /> Grant Access
+              </button>
+            </form>
+
+            {/* Messages */}
+            {adminEmailError && (
+              <div className="mt-3 bg-red-950/50 border border-red-900/50 text-red-400 text-xs px-3 py-2 rounded-lg">
+                {adminEmailError}
+              </div>
+            )}
+            {adminEmailSuccess && (
+              <div className="mt-3 bg-green-950/50 border border-green-900/50 text-green-400 text-xs px-3 py-2 rounded-lg">
+                {adminEmailSuccess}
+              </div>
+            )}
           </div>
 
           <div className="pt-8 border-t border-slate-800">
