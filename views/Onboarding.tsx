@@ -22,15 +22,20 @@ const Onboarding: React.FC = () => {
 
        // 2. Check if email is an admin (from admin_emails table)
        if (user.email) {
-           const { data } = await supabase
-             .from('admin_emails')
-             .select('email')
-             .eq('email', user.email)
-             .single();
-           
-           if (data) {
-               await handleAdminOnboarding();
-               return;
+           try {
+               const { data } = await supabase
+                 .from('admin_emails')
+                 .select('email')
+                 .eq('email', user.email)
+                 .single();
+               
+               if (data) {
+                   await handleAdminOnboarding();
+                   return;
+               }
+           } catch (err) {
+               // Table may not exist yet — fall through to spectator
+               console.warn('admin_emails check failed, falling through:', err);
            }
        }
 
