@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuctionProvider } from './context/AuctionContext';
 import { AuthProvider, useAuth } from './context/AuthProvider';
@@ -8,6 +8,42 @@ import Admin from './views/Admin';
 import Teams from './views/Teams';
 import Home from './views/Home';
 import Onboarding from './views/Onboarding';
+
+// Error Boundary to catch runtime errors and prevent blank screen
+interface ErrorBoundaryProps { children: ReactNode; }
+interface ErrorBoundaryState { hasError: boolean; error: Error | null; }
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  declare props: ErrorBoundaryProps;
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('App Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-8">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold mb-2">Something went wrong</h1>
+          <p className="text-slate-400 mb-6 text-center max-w-md">{this.state.error?.message || 'An unexpected error occurred.'}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: ReactNode, requireAdmin?: boolean }) => {
   const { user, profile, loading, isAdmin } = useAuth();
@@ -70,15 +106,17 @@ const AppRoutes = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <AuctionProvider>
-          <Layout>
-            <AppRoutes />
-          </Layout>
-        </AuctionProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <AuctionProvider>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </AuctionProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 };
 
