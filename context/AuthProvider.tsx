@@ -72,22 +72,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialSessionHandled = false;
+
     // Check active session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user.id, session.user); // Pass user
+        await fetchProfile(session.user.id, session.user);
       } else {
         setProfile(null);
       }
+      initialSessionHandled = true;
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Listen for auth changes (fires AFTER getSession for OAuth callbacks, login/logout, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip INITIAL_SESSION — getSession() already handles the first load
+      if (event === 'INITIAL_SESSION') return;
+
+      // Block renders while we process the new auth state
+      setLoading(true);
+
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user.id, session.user); // Pass user
+        await fetchProfile(session.user.id, session.user);
       } else {
         setProfile(null);
       }

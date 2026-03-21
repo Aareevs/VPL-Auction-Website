@@ -10,10 +10,6 @@ const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  if (!authLoading && !user) {
-    return <Navigate to="/" replace />;
-  }
-
   useEffect(() => {
     const init = async () => {
        if (!user) return;
@@ -95,6 +91,11 @@ const Onboarding: React.FC = () => {
           setLoading(false);
       }
   };
+
+  // Redirect unauthenticated users AFTER all hooks have been called
+  if (!authLoading && !user) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
