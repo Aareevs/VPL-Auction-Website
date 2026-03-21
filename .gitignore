@@ -21,4 +21,6 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sw?# Neurcode session history (allow config.json to be committed)
+.neurcode/*
+!.neurcode/config.json

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthProvider';
 
 const PLAYER_IMAGES = [
   "https://images.news18.com/ibnlive/uploads/2025/02/virat-kohli-shot-AP-1-2025-02-9e28043ad4ef3e00a00b1a2093fa13c9-4x3.jpg",
@@ -86,12 +87,20 @@ const SlidingBackground = () => {
 };
 
 const Home: React.FC = () => {
+  const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+
+  if (authLoading) return null;
+
+  if (user) {
+    if (profile) return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/onboarding" replace />;
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

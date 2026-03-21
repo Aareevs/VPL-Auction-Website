@@ -70,5 +70,10 @@ BEFORE INSERT OR UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION force_admin_role();
 
--- 8. Enable realtime for admin_emails (optional, for live updates)
-ALTER PUBLICATION supabase_realtime ADD TABLE admin_emails;
+-- 8. Enable realtime for admin_emails (safe to re-run)
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE admin_emails;
+EXCEPTION WHEN duplicate_object THEN
+  NULL; -- Already added, ignore
+END $$;

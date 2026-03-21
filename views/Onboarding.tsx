@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { INITIAL_TEAMS } from '../constants';
 import { useAuth } from '../context/AuthProvider';
 
 
 const Onboarding: React.FC = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  if (!authLoading && !user) {
+    return <Navigate to="/" replace />;
+  }
 
   useEffect(() => {
     const init = async () => {
