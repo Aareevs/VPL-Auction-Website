@@ -51,25 +51,26 @@ const Navbar: React.FC = () => {
         })}
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {user && (
-           <div className="flex items-center gap-3 bg-slate-800 rounded-full px-4 py-1.5 border border-slate-700">
-             <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
+           <div className="flex items-center gap-3 bg-slate-800 rounded-full pl-4 pr-2 py-1.5 border border-slate-700">
+             <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
                 <UserIcon size={14} className="text-slate-400" />
              </div>
              <div className="flex flex-col">
                 <span className="text-xs text-slate-300 font-medium max-w-[100px] truncate">{profile?.full_name || user.email}</span>
                 <span className="text-[10px] text-slate-500 uppercase leading-none">{profile?.role || 'Guest'}</span>
              </div>
+             <div className="w-px h-6 bg-slate-600 mx-1"></div>
+             <button 
+               onClick={handleSignOut}
+               className="text-slate-400 hover:text-red-400 transition-colors p-1.5 rounded-full hover:bg-slate-700"
+               title="Sign Out"
+             >
+               <LogOut size={16} />
+             </button>
            </div>
         )}
-        <button 
-           onClick={handleSignOut}
-           className="text-slate-400 hover:text-red-400 transition-colors p-2"
-           title="Sign Out"
-        >
-          <LogOut size={20} />
-        </button>
       </div>
     </nav>
   );
