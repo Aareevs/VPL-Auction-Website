@@ -28,70 +28,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+  const fetchAndUpsertProfile = useCallback(async (authUser: User) => {
     try {
+      // Try to fetch existing profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('[Auth] No profile — needs onboarding');
-        } else {
-          console.error('[Auth] Profile error:', error.message);
-        }
-        return null;
+      if (data && !error) {
+        setProfile(data as UserProfile);
+        return;
       }
-      return data as UserProfile;
+
+      // If no profile exists (error.code === 'PGRST116') or other error, let's upsert one
+      let role: UserRole = 'spectator';
+      
+      // Check if they are an admin
+      if (authUser.email) {
+        const { data: adminData } = await supabase
+          .from('admin_emails')
+          .select('email')
+          .eq('email', authUser.email)
+          .single();
+          
+        if (adminData) role = 'admin';
+      }
+
+      // Upsert new profile
+      const newProfile = {
+        id: authUser.id,
+        email: authUser.email || '',
+        full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
+        role,
+        team_id: null,
+      };
+
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(newProfile);
+
+      if (!upsertError) {
+        setProfile(newProfile as UserProfile);
+      }
     } catch (err) {
-      console.error('[Auth] Profile fetch failed:', err);
-      return null;
+      console.error('[Auth] Profile operation failed:', err);
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) {
-      const p = await fetchProfile(user.id);
-      setProfile(p);
-    }
-  }, [user, fetchProfile]);
+    if (user) await fetchAndUpsertProfile(user);
+  }, [user, fetchAndUpsertProfile]);
 
   useEffect(() => {
     let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Supabase 2.39.3 getSession works perfectly and doesn't block
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      console.log('[Auth] Event:', event);
-
       const currentUser = session?.user ?? null;
-
-      // IMPORTANT: Set user and stop loading FIRST, synchronously.
-      // Then fetch profile in the background. This prevents hangs.
       setUser(currentUser);
       setLoading(false);
-
+      
       if (currentUser) {
-        // Profile fetch is non-blocking — UI renders immediately
-        const p = await fetchProfile(currentUser.id);
-        if (mounted) setProfile(p);
+        fetchAndUpsertProfile(currentUser);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setLoading(false);
+      
+      if (currentUser) {
+        fetchAndUpsertProfile(currentUser);
       } else {
         setProfile(null);
       }
     });
 
-    // Safety: if no auth event fires within 3 seconds, stop loading
-    const safety = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 3000);
-
     return () => {
       mounted = false;
-      clearTimeout(safety);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchAndUpsertProfile]);
 
   const signOut = async () => {
     try { await supabase.auth.signOut(); } catch {}
@@ -99,25 +121,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const isAdmin = profile?.role === 'admin' || user?.email === 'aareevs@gmail.com';
+
   const value = {
     user,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin' || user?.email === 'aareevs@gmail.com',
+    isAdmin,
     signOut,
     refreshProfile
   };
 
   if (loading) {
     return (
-      <AuthContext.Provider value={value}>
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-400">Loading...</p>
-          </div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading...</p>
         </div>
-      </AuthContext.Provider>
+      </div>
     );
   }
 

@@ -98,8 +98,7 @@ const Home: React.FC = () => {
   if (authLoading) return null;
 
   if (user) {
-    if (profile) return <Navigate to="/dashboard" replace />;
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleAuth = async (e: React.FormEvent) => {

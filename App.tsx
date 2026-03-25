@@ -7,7 +7,6 @@ import Dashboard from './views/Dashboard';
 import Admin from './views/Admin';
 import Teams from './views/Teams';
 import Home from './views/Home';
-import Onboarding from './views/Onboarding';
 
 // Error Boundary to catch runtime errors and prevent blank screen
 interface ErrorBoundaryProps { children: ReactNode; }
@@ -46,14 +45,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: ReactNode, requireAdmin?: boolean }) => {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
+  if (loading) return null; // already handled by AuthProvider
 
   if (!user) return <Navigate to="/" state={{ from: location }} replace />;
-
-  if (!profile) return <Navigate to="/onboarding" replace />;
 
   if (requireAdmin && !isAdmin) return <Navigate to="/dashboard" replace />;
 
@@ -62,8 +59,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: ReactNod
 
 const Layout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  // Don't show navbar on home/onboarding or if not authenticated (handled by route protection)
-  const showNavbar = location.pathname !== '/' && location.pathname !== '/onboarding';
+  const showNavbar = location.pathname !== '/';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 selection:bg-blue-500 selection:text-white pb-20 md:pb-0">
@@ -79,7 +75,6 @@ const AppRoutes = () => {
   return (
      <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/onboarding" element={<Onboarding />} />
         
         <Route path="/dashboard" element={
           <ProtectedRoute>
