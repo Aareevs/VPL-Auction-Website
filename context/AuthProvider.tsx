@@ -23,6 +23,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Retry helper for AbortError resilience
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 500): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      if (err?.name === 'AbortError' && i < retries - 1) {
+        console.log(`[Auth] Retrying after AbortError (attempt ${i + 2}/${retries})...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('withRetry exhausted');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -80,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('[Auth] Initializing...');
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await withRetry(() => supabase.auth.getSession());
 
         if (error) {
           console.error('[Auth] getSession error:', error.message);

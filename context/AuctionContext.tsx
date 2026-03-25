@@ -116,33 +116,46 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, []);
 
-  const fetchInitialData = async () => {
-    const { data: playersData, error } = await supabase.from('players').select('*').order('set_no', { ascending: true });
-    
-    if (error) {
-        console.error("Error fetching players:", error);
-        return;
-    }
+  const fetchInitialData = async (attempt = 1): Promise<void> => {
+    try {
+      const { data: playersData, error } = await supabase.from('players').select('*').order('set_no', { ascending: true });
+      
+      if (error) {
+          // Retry on AbortError
+          if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
+            if (attempt < 3) {
+              console.log(`[Auction] Retrying fetch (attempt ${attempt + 1}/3)...`);
+              await new Promise(r => setTimeout(r, 500));
+              return fetchInitialData(attempt + 1);
+            }
+          }
+          console.error("Error fetching players:", error);
+          return;
+      }
 
-    if (playersData) {
-        // Sort specifically by the ID suffix (s1-2 vs s1-10) to keep original order
-        const sorted_players = playersData.map(transformPlayerFromDB).sort((a, b) => {
-            if (a.set !== b.set) return a.set - b.set;
-            // Parse "s1-2" -> 2, "s1-10" -> 10
-            const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
-            return getNum(a.id) - getNum(b.id);
-        });
-        setPlayers(sorted_players);
-    }
+      if (playersData) {
+          const sorted_players = playersData.map(transformPlayerFromDB).sort((a, b) => {
+              if (a.set !== b.set) return a.set - b.set;
+              const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
+              return getNum(a.id) - getNum(b.id);
+          });
+          setPlayers(sorted_players);
+      }
 
-    const { data: auctionData } = await supabase.from('auction_state').select('*').single();
-    if (auctionData) setAuctionState(auctionData);
+      const { data: auctionData } = await supabase.from('auction_state').select('*').single();
+      if (auctionData) setAuctionState(auctionData);
 
-    const { data: setsData, error: setsError } = await supabase.from('auction_sets').select('*').order('display_order', { ascending: true });
-    if (setsData) {
-        setSets(setsData);
-    } else {
-        // Fallback or empty
+      const { data: setsData } = await supabase.from('auction_sets').select('*').order('display_order', { ascending: true });
+      if (setsData) {
+          setSets(setsData);
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError' && attempt < 3) {
+        console.log(`[Auction] Retrying after AbortError (attempt ${attempt + 1}/3)...`);
+        await new Promise(r => setTimeout(r, 500));
+        return fetchInitialData(attempt + 1);
+      }
+      console.error('[Auction] fetchInitialData failed:', err);
     }
   };
   
