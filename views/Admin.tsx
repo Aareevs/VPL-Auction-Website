@@ -411,7 +411,7 @@ const Admin: React.FC = () => {
                            <span>Reorder Sets</span>
                            <button 
                                onClick={async () => {
-                                   await reorderSets(localSetOrder.map(s => s.id));
+                                   await reorderSets(localSetOrder);
                                    setManageSetsDialog(false);
                                    alert('Set order saved successfully!');
                                }}

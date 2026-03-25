@@ -15,7 +15,7 @@ interface AuctionContextType {
   // Admin Actions
   createSet: (name: string) => Promise<void>;
   updatePlayerSet: (playerId: string, setId: number) => Promise<void>;
-  reorderSets: (orderedSetIds: number[]) => Promise<void>;
+  reorderSets: (orderedSets: AuctionSet[]) => Promise<void>;
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
   startAuction: (playerId: string) => void;
@@ -177,10 +177,11 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   // Actions
-  const reorderSets = async (orderedSetIds: number[]) => {
-      // Build array of {id, display_order}
-      const updates = orderedSetIds.map((id, index) => ({
-          id,
+  const reorderSets = async (orderedSets: AuctionSet[]) => {
+      // Build array of {id, name, display_order} to satisfy NOT NULL 'name' constraint during upsert
+      const updates = orderedSets.map((set, index) => ({
+          id: set.id,
+          name: set.name,
           display_order: index + 1 // 1-indexed for clarity
       }));
 
