@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
 import { formatCurrency } from '../constants';
 import { supabase } from '../lib/supabaseClient';
-import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail } from 'lucide-react';
+import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail, ArrowUp, ArrowDown, Save } from 'lucide-react';
 
 interface AdminEmail {
   id: string;
@@ -29,7 +29,8 @@ const Admin: React.FC = () => {
     deletePlayer,
     sets,
     createSet,
-    updatePlayerSet
+    updatePlayerSet,
+    reorderSets
   } = useAuction();
 
   const { user } = useAuth();
@@ -141,8 +142,9 @@ const Admin: React.FC = () => {
   const [newPlayerImage, setNewPlayerImage] = useState('');
   const [newPlayerPrice, setNewPlayerPrice] = useState(20);
   const [newPlayerSet, setNewPlayerSet] = useState(0);
-  const [newSetDialog, setNewSetDialog] = useState(false);
+  const [manageSetsDialog, setManageSetsDialog] = useState(false);
   const [newSetName, setNewSetName] = useState('');
+  const [localSetOrder, setLocalSetOrder] = useState<typeof sets>([]);
   
   // Stats
   const [statsAge, setStatsAge] = useState(0);
@@ -268,7 +270,6 @@ const Admin: React.FC = () => {
       if(!newSetName) return;
       await createSet(newSetName);
       setNewSetName('');
-      setNewSetDialog(false);
   };
 
   const currentSetName = currentPlayer ? sets.find(s => s.id === currentPlayer?.set)?.name : '';
@@ -381,17 +382,20 @@ const Admin: React.FC = () => {
               {/* Set Management Toggle */}
                 <div className="mb-4 flex justify-end">
                     <button 
-                        onClick={() => setNewSetDialog(!newSetDialog)}
-                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        onClick={() => {
+                            if (!manageSetsDialog) setLocalSetOrder([...sortedSets]);
+                            setManageSetsDialog(!manageSetsDialog);
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-500/30 transition-colors"
                     >
-                        <Layers size={14} /> {newSetDialog ? 'Cancel New Set' : 'Create New Set'}
+                        <Layers size={14} /> {manageSetsDialog ? 'Close Manage Sets' : 'Manage Sets'}
                     </button>
                 </div>
 
-              {newSetDialog && (
-                   <form onSubmit={handleCreateSet} className="bg-slate-800 p-4 rounded-lg mb-4 border border-blue-500/30">
-                       <label className="block text-slate-400 text-xs mb-1">New Set Name</label>
-                       <div className="flex gap-2">
+              {manageSetsDialog && (
+                   <div className="bg-slate-800 p-4 rounded-xl mb-6 border border-blue-500/30 space-y-4">
+                       <h4 className="text-white font-bold text-sm">Create New Set</h4>
+                       <form onSubmit={handleCreateSet} className="flex gap-2 pb-4 border-b border-slate-700">
                            <input 
                             type="text" 
                             className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white text-sm"
@@ -401,8 +405,60 @@ const Admin: React.FC = () => {
                             required
                            />
                            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded text-xs font-bold uppercase">Create</button>
+                       </form>
+
+                       <h4 className="text-white font-bold text-sm pt-2 flex items-center justify-between">
+                           <span>Reorder Sets</span>
+                           <button 
+                               onClick={async () => {
+                                   await reorderSets(localSetOrder.map(s => s.id));
+                                   setManageSetsDialog(false);
+                                   alert('Set order saved successfully!');
+                               }}
+                               className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                           >
+                               <Save size={12} /> Save Order
+                           </button>
+                       </h4>
+                       <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                           {localSetOrder.map((s, index) => (
+                               <div key={s.id} className="flex items-center justify-between bg-slate-900 border border-slate-700 p-2 rounded">
+                                   <div className="text-sm text-slate-300 font-medium px-2">{s.name}</div>
+                                   <div className="flex bg-slate-800 rounded overflow-hidden">
+                                       <button 
+                                           onClick={(e) => {
+                                               e.preventDefault();
+                                               if (index > 0) {
+                                                   const newOrder = [...localSetOrder];
+                                                   [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+                                                   setLocalSetOrder(newOrder);
+                                               }
+                                           }}
+                                           disabled={index === 0}
+                                           className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                                       >
+                                           <ArrowUp size={14} />
+                                       </button>
+                                       <button 
+                                           onClick={(e) => {
+                                               e.preventDefault();
+                                               if (index < localSetOrder.length - 1) {
+                                                   const newOrder = [...localSetOrder];
+                                                   [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                                                   setLocalSetOrder(newOrder);
+                                               }
+                                           }}
+                                           disabled={index === localSetOrder.length - 1}
+                                           className="p-1.5 border-l border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
+                                       >
+                                           <ArrowDown size={14} />
+                                       </button>
+                                   </div>
+                               </div>
+                           ))}
+                           {localSetOrder.length === 0 && <div className="text-xs text-slate-500 text-center py-2">No sets available.</div>}
                        </div>
-                   </form>
+                   </div>
               )}
 
               <form onSubmit={handleSavePlayer} className="space-y-4">

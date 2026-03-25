@@ -15,6 +15,7 @@ interface AuctionContextType {
   // Admin Actions
   createSet: (name: string) => Promise<void>;
   updatePlayerSet: (playerId: string, setId: number) => Promise<void>;
+  reorderSets: (orderedSetIds: number[]) => Promise<void>;
   addPlayer: (player: Player) => void;
   updatePlayer: (player: Player) => void;
   startAuction: (playerId: string) => void;
@@ -83,6 +84,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_sets' }, (payload) => {
           if (payload.eventType === 'INSERT') {
              setSets(prev => [...prev, payload.new as AuctionSet].sort((a,b) => (a.display_order||0) - (b.display_order||0)));
+          } else if (payload.eventType === 'UPDATE') {
+             setSets(prev => prev.map(s => s.id === payload.new.id ? payload.new as AuctionSet : s).sort((a,b) => (a.display_order||0) - (b.display_order||0)));
           }
        })
       .subscribe();
@@ -174,6 +177,21 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   // Actions
+  const reorderSets = async (orderedSetIds: number[]) => {
+      // Build array of {id, display_order}
+      const updates = orderedSetIds.map((id, index) => ({
+          id,
+          display_order: index + 1 // 1-indexed for clarity
+      }));
+
+      // Upsert into auction_sets table
+      const { error } = await supabase.from('auction_sets').upsert(updates);
+      if (error) {
+          console.error("Error reordering sets:", error);
+          alert("Error reordering sets: " + error.message);
+      }
+  };
+
   const addPlayer = async (player: Player) => {
      // Admin only - insert to DB
      const { error } = await supabase.from('players').insert({
@@ -381,6 +399,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       bidHistory,
       sets,
       createSet,
+      reorderSets,
       updatePlayerSet,
       addPlayer,
       updatePlayer,
