@@ -23,31 +23,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Retry helper for AbortError resilience
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 500): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      if (err?.name === 'AbortError' && i < retries - 1) {
-        console.log(`[Auth] Retrying after AbortError (attempt ${i + 2}/${retries})...`);
-        await new Promise(r => setTimeout(r, delay));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error('withRetry exhausted');
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string, currentUser?: User): Promise<UserProfile | null> => {
+  // Fetch profile — returns null if not found (new user)
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log('[Auth] Fetching profile for', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -56,93 +39,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('[Auth] No profile found — user needs onboarding');
+          console.log('[Auth] No profile — needs onboarding');
         } else {
-          console.error('[Auth] Profile fetch error:', error.message);
+          console.error('[Auth] Profile error:', error.message);
         }
-        setProfile(null);
         return null;
       }
-
-      const profileData = data as UserProfile;
-
-      // Fire-and-forget name sync
-      if (currentUser && !profileData.full_name) {
-        const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
-        if (fullName) {
-          profileData.full_name = fullName;
-          supabase.from('profiles').update({ full_name: fullName }).eq('id', userId).then(() => {});
-        }
-      }
-
-      console.log('[Auth] Profile loaded:', profileData.role);
-      setProfile(profileData);
-      return profileData;
+      return data as UserProfile;
     } catch (err) {
-      console.error('[Auth] Unexpected error:', err);
-      setProfile(null);
+      console.error('[Auth] Profile fetch failed:', err);
       return null;
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await fetchProfile(user.id, user);
+      const p = await fetchProfile(user.id);
+      setProfile(p);
     }
   }, [user, fetchProfile]);
 
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
+    // Hard timeout — NEVER let loading persist more than 5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('[Auth] Safety timeout — forcing loading=false');
+        setLoading(false);
+      }
+    }, 5000);
+
+    const init = async () => {
       try {
-        console.log('[Auth] Initializing...');
-        const { data: { session }, error } = await withRetry(() => supabase.auth.getSession());
+        const { data, error } = await supabase.auth.getSession();
+        if (!mounted) return;
 
         if (error) {
           console.error('[Auth] getSession error:', error.message);
+          setLoading(false);
+          return;
         }
 
-        if (!mounted) return;
-
-        const currentUser = session?.user ?? null;
-        console.log('[Auth] Session user:', currentUser?.email ?? 'none');
+        const currentUser = data.session?.user ?? null;
+        console.log('[Auth] Session:', currentUser?.email ?? 'none');
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchProfile(currentUser.id, currentUser);
-        } else {
-          setProfile(null);
+          const p = await fetchProfile(currentUser.id);
+          if (mounted) setProfile(p);
         }
       } catch (err) {
-        console.error('[Auth] Init failed:', err);
-        if (mounted) {
-          setUser(null);
-          setProfile(null);
-        }
+        console.error('[Auth] Init error:', err);
       } finally {
-        // ALWAYS stop loading, no matter what happens
         if (mounted) {
-          console.log('[Auth] Init complete, loading = false');
+          console.log('[Auth] Ready');
           setLoading(false);
         }
       }
     };
 
-    initAuth();
+    init();
 
-    // Listen for auth changes (login, logout, token refresh)
+    // Listen for auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'INITIAL_SESSION') return;
       if (!mounted) return;
 
       console.log('[Auth] Event:', event);
-
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {
-        await fetchProfile(currentUser.id, currentUser);
+        const p = await fetchProfile(currentUser.id);
+        if (mounted) setProfile(p);
       } else {
         setProfile(null);
       }
@@ -150,12 +120,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[Auth] Sign out error:', err);
+    }
     setUser(null);
     setProfile(null);
   };
