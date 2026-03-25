@@ -9,15 +9,20 @@ if (!isConfigured) {
   console.warn('Missing Supabase environment variables. Authentication will not work.');
 }
 
-// Custom fetch that strips the internal AbortController signal
-// to prevent "AbortError: signal is aborted without reason"
-const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
-  if (init) {
-    // Remove the abort signal that Supabase JS injects internally
-    const { signal, ...rest } = init;
-    return fetch(input, rest);
-  }
-  return fetch(input);
+// Custom fetch that replaces Supabase's internal AbortController
+// with a clean 15-second timeout. This prevents the "signal is
+// aborted without reason" error while still allowing requests to timeout.
+const customFetch: typeof fetch = (input, init) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  // Use a clean signal, ignore whatever Supabase passes
+  const cleanInit: RequestInit = {
+    ...(init || {}),
+    signal: controller.signal,
+  };
+
+  return fetch(input, cleanInit).finally(() => clearTimeout(timeout));
 };
 
 export const supabase = createClient(
@@ -35,5 +40,4 @@ export const supabase = createClient(
   }
 );
 
-// Helper to check configuration status
 export const isSupabaseConfigured = () => !!isConfigured;
