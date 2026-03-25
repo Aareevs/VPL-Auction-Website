@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { User } from '@supabase/supabase-js';
 
-// Define the shape of our user profile from the database
 export type UserRole = 'admin' | 'team_member' | 'spectator' | null;
 
 interface UserProfile {
@@ -29,82 +28,114 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Function to fetch the user's profile from the 'profiles' table
-  const fetchProfile = async (userId: string, currentUser?: User) => {
+  const fetchProfile = useCallback(async (userId: string, currentUser?: User): Promise<UserProfile | null> => {
     try {
+      console.log('[Auth] Fetching profile for', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        const profileData = data as UserProfile;
-        
-        // Auto-sync name if missing in DB but present in Auth
-        if (currentUser && !profileData.full_name) {
-          const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
-          if (fullName) {
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ full_name: fullName })
-              .eq('id', userId);
-            
-            if (!updateError) {
-              profileData.full_name = fullName;
-            }
-          }
-        }
-        
-        setProfile(profileData);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching profile:', err);
-    }
-  };
 
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id, user); // Pass user
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log('[Auth] No profile found — user needs onboarding');
+        } else {
+          console.error('[Auth] Profile fetch error:', error.message);
+        }
+        setProfile(null);
+        return null;
+      }
+
+      const profileData = data as UserProfile;
+
+      // Fire-and-forget name sync
+      if (currentUser && !profileData.full_name) {
+        const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
+        if (fullName) {
+          profileData.full_name = fullName;
+          supabase.from('profiles').update({ full_name: fullName }).eq('id', userId).then(() => {});
+        }
+      }
+
+      console.log('[Auth] Profile loaded:', profileData.role);
+      setProfile(profileData);
+      return profileData;
+    } catch (err) {
+      console.error('[Auth] Unexpected error:', err);
+      setProfile(null);
+      return null;
     }
-  };
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id, user);
+    }
+  }, [user, fetchProfile]);
 
   useEffect(() => {
-    let initialSessionHandled = false;
+    let mounted = true;
 
-    // Check active session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.user);
-      } else {
-        setProfile(null);
+    const initAuth = async () => {
+      try {
+        console.log('[Auth] Initializing...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('[Auth] getSession error:', error.message);
+        }
+
+        if (!mounted) return;
+
+        const currentUser = session?.user ?? null;
+        console.log('[Auth] Session user:', currentUser?.email ?? 'none');
+        setUser(currentUser);
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id, currentUser);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error('[Auth] Init failed:', err);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+        }
+      } finally {
+        // ALWAYS stop loading, no matter what happens
+        if (mounted) {
+          console.log('[Auth] Init complete, loading = false');
+          setLoading(false);
+        }
       }
-      initialSessionHandled = true;
-      setLoading(false);
-    });
+    };
 
-    // Listen for auth changes (fires AFTER getSession for OAuth callbacks, login/logout, etc.)
+    initAuth();
+
+    // Listen for auth changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Skip INITIAL_SESSION — getSession() already handles the first load
       if (event === 'INITIAL_SESSION') return;
+      if (!mounted) return;
 
-      // Block renders while we process the new auth state
-      setLoading(true);
+      console.log('[Auth] Event:', event);
 
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.user);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        await fetchProfile(currentUser.id, currentUser);
       } else {
         setProfile(null);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -116,14 +147,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin' || user?.email === 'aareevs@gmail.com', // Fallback check for bootstrap
+    isAdmin: profile?.role === 'admin' || user?.email === 'aareevs@gmail.com',
     signOut,
     refreshProfile
   };
 
+  if (loading) {
+    return (
+      <AuthContext.Provider value={value}>
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading...</p>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
