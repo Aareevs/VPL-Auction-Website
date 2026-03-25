@@ -4,7 +4,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
 
 const Onboarding: React.FC = () => {
-  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
+  const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,25 +27,51 @@ const Onboarding: React.FC = () => {
       setError(null);
 
       try {
+        // Get the user's access token for direct REST calls
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Supabase not configured');
+        }
+
         let role: 'admin' | 'spectator' = 'spectator';
 
-        // Check admin_emails table (with timeout)
+        // Check admin_emails via direct REST call
         if (user.email) {
           try {
-            const adminCheck = await Promise.race([
-              supabase.from('admin_emails').select('email').eq('email', user.email).single(),
-              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-            ]);
-            if ('data' in adminCheck && adminCheck.data) role = 'admin';
+            const adminResp = await fetch(
+              `${supabaseUrl}/rest/v1/admin_emails?email=eq.${encodeURIComponent(user.email)}&select=email&limit=1`,
+              {
+                headers: {
+                  'apikey': supabaseKey,
+                  'Authorization': `Bearer ${accessToken || supabaseKey}`,
+                },
+              }
+            );
+            if (adminResp.ok) {
+              const adminData = await adminResp.json();
+              if (Array.isArray(adminData) && adminData.length > 0) role = 'admin';
+            }
           } catch {
-            // Timeout or table doesn't exist — fall through to spectator
+            // Table may not exist — fall through to spectator
           }
         }
 
-        // Upsert profile (with timeout)
+        // Upsert profile via direct REST call (bypasses Supabase JS client)
         console.log(`[Onboarding] Assigning role: ${role}`);
-        const upsertResult = await Promise.race([
-          supabase.from('profiles').upsert({
+        const upsertResp = await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${accessToken || supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify({
             id: user.id,
             email: user.email,
             full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
@@ -53,18 +79,15 @@ const Onboarding: React.FC = () => {
             team_id: null,
             created_at: new Date().toISOString(),
           }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Profile save timed out')), 8000))
-        ]);
+        });
 
-        if ('error' in upsertResult && upsertResult.error) {
-          throw new Error(upsertResult.error.message);
+        if (!upsertResp.ok) {
+          const errBody = await upsertResp.text();
+          throw new Error(`Profile save failed: ${errBody}`);
         }
 
         console.log('[Onboarding] Success — navigating to dashboard');
-        // Navigate directly — don't wait for refreshProfile
         navigate('/dashboard', { replace: true });
-        
-        // Refresh profile in background so dashboard picks it up
         refreshProfile().catch(() => {});
       } catch (err: any) {
         console.error('[Onboarding] Failed:', err);
@@ -102,10 +125,13 @@ const Onboarding: React.FC = () => {
               Try Again
             </button>
             <button
-              onClick={() => navigate('/dashboard', { replace: true })}
-              className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+              onClick={async () => {
+                await signOut();
+                navigate('/', { replace: true });
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
             >
-              Skip to Dashboard
+              Log Out
             </button>
           </div>
         </div>
