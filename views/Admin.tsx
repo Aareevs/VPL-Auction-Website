@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
 import { formatCurrency } from '../constants';
 import { supabase } from '../lib/supabaseClient';
-import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail, ArrowUp, ArrowDown, Save } from 'lucide-react';
+import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail, ArrowUp, ArrowDown, Save, Upload, Loader2 } from 'lucide-react';
 
 interface AdminEmail {
   id: string;
@@ -166,6 +166,35 @@ const Admin: React.FC = () => {
 
   // Sort sets by display order
   const sortedSets = [...sets].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+          const filePath = `players/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+              .from('vpl-images')
+              .upload(filePath, file);
+
+          if (uploadError) {
+              throw uploadError;
+          }
+
+          const { data } = supabase.storage.from('vpl-images').getPublicUrl(filePath);
+          setNewPlayerImage(data.publicUrl);
+      } catch (error: any) {
+          alert('Error uploading image: ' + error.message);
+      } finally {
+          setIsUploading(false);
+      }
+  };
 
   const resetForm = () => {
       setEditingPlayerId(null);
@@ -522,15 +551,37 @@ const Admin: React.FC = () => {
                       </div>
                   </div>
 
+                  {/* Image Upload / URL Section */}
                   <div>
-                      <label className="block text-slate-400 text-xs mb-1">Image URL</label>
-                      <input 
-                        type="text" 
-                        placeholder="https://..."
-                        className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500"
-                        value={newPlayerImage}
-                        onChange={e => setNewPlayerImage(e.target.value)}
-                      />
+                      <label className="block text-slate-400 text-xs mb-2">Player Image</label>
+                      <div className="flex gap-4 items-center">
+                          {/* Preview Box */}
+                          <div className="w-24 h-24 flex-shrink-0 bg-slate-900 border-2 border-slate-700 border-dashed rounded-xl overflow-hidden flex items-center justify-center relative group pointer-events-auto">
+                              {newPlayerImage ? (
+                                  <img src={newPlayerImage} className="w-full h-full object-cover" />
+                              ) : (
+                                  <User size={32} className="text-slate-600" />
+                              )}
+                              
+                              {/* Upload Overlay */}
+                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity z-10">
+                                  {isUploading ? <Loader2 size={24} className="text-white animate-spin" /> : <Upload size={24} className="text-white" />}
+                                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                              </label>
+                          </div>
+                          
+                          {/* URL Fallback / Info */}
+                          <div className="flex-1 space-y-2">
+                             <div className="text-xs text-slate-500">Tap the preview picture to upload an image from your device, or simply paste a public image URL below.</div>
+                             <input 
+                                type="text" 
+                                placeholder="Auto-fills on upload, or paste https://..."
+                                className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                                value={newPlayerImage}
+                                onChange={e => setNewPlayerImage(e.target.value)}
+                             />
+                          </div>
+                      </div>
                   </div>
 
                   {/* Stats Section */}
