@@ -427,7 +427,9 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex flex-col items-end">
-                            <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded-md border border-slate-800">{team.squad.length}/8</span>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-md border ${team.squad.length >= 7 ? 'bg-red-900/30 border-red-500/50 text-red-400' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
+                                {team.squad.length}/7
+                            </span>
                         </div>
                     </button>
                 ))}
