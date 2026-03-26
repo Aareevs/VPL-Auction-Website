@@ -184,9 +184,9 @@ const Dashboard: React.FC = () => {
             </div>
 
             {currentPlayer ? (
-                <div className="relative w-full h-full min-h-[600px] z-10 flex flex-col justify-end overflow-hidden">
+                <div className="relative w-full h-full min-h-[600px] z-10 overflow-hidden">
                     {currentPlayer.imageUrl ? (
-                        <div className="absolute inset-0 flex items-end justify-center z-0 px-6 pt-8">
+                        <div className="absolute inset-0 flex items-end justify-center z-0 px-8 pt-8 pb-40">
                             <img
                                 src={currentPlayer.imageUrl}
                                 alt={currentPlayer.name}
@@ -199,31 +199,41 @@ const Dashboard: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent z-10 pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-slate-950 via-slate-950/88 to-transparent z-10 pointer-events-none" />
 
-                    <div className="relative z-20 px-8 pb-10 pt-24 text-center flex flex-col items-center">
-                        <h2 className="text-5xl md:text-6xl lg:text-7xl text-white font-black display-font leading-none tracking-tight uppercase drop-shadow-2xl">
-                            {currentPlayer.name}
-                        </h2>
-                        <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/55 px-6 py-3 backdrop-blur-md">
-                            <Shield size={22} className="text-blue-300" />
-                            <span className="text-xl md:text-2xl font-bold uppercase tracking-[0.2em] text-blue-100">
-                                {currentPlayer.role || 'Player'}
-                            </span>
-                        </div>
-                        <div className="mt-6 inline-flex flex-col items-center rounded-2xl border border-yellow-400/20 bg-black/45 px-8 py-4 backdrop-blur-md shadow-[0_0_40px_rgba(15,23,42,0.45)]">
-                            <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-                                {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
-                            </div>
-                            <div className={`mt-2 text-4xl md:text-5xl font-black display-font ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
-                                {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
-                            </div>
-                            {holdingTeam && currentBid > currentPlayer.basePrice ? (
-                                <div className="mt-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-300">
-                                    <span className="text-slate-500">Held By</span>
-                                    <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-6 md:p-8">
+                        <div className="mx-auto max-w-4xl rounded-[28px] border border-white/10 bg-slate-950/78 backdrop-blur-xl shadow-[0_20px_80px_rgba(2,6,23,0.55)]">
+                            <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8">
+                                <div className="min-w-0">
+                                    <div className="text-[11px] uppercase tracking-[0.35em] text-blue-300/70">On The Block</div>
+                                    <h2 className="mt-3 text-4xl md:text-6xl text-white font-black display-font leading-none tracking-tight uppercase break-words">
+                                        {currentPlayer.name}
+                                    </h2>
+                                    <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
+                                        <Shield size={20} className="text-blue-300" />
+                                        <span className="text-base md:text-xl font-bold uppercase tracking-[0.22em] text-blue-100">
+                                            {currentPlayer.role || 'Player'}
+                                        </span>
+                                    </div>
                                 </div>
-                            ) : null}
+
+                                <div className="flex flex-col items-start md:items-end">
+                                    <div className="rounded-2xl border border-yellow-400/20 bg-black/40 px-5 py-4 md:px-6 text-left md:text-right min-w-[220px]">
+                                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
+                                            {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
+                                        </div>
+                                        <div className={`mt-2 text-4xl md:text-5xl font-black display-font ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
+                                            {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
+                                        </div>
+                                        {holdingTeam && currentBid > currentPlayer.basePrice ? (
+                                            <div className="mt-3 text-sm font-bold uppercase tracking-[0.2em]">
+                                                <span className="text-slate-500">Held By </span>
+                                                <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
