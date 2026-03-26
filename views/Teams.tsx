@@ -9,6 +9,7 @@ const Teams: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || '');
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  const showCountryColumn = selectedTeam ? selectedTeam.squad.some(player => !isCaptain(player)) : false;
   const showRoleColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerDisplayRole(player)) : false;
   const showAcquisitionColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerAcquisitionLabel(player)) : false;
 
@@ -159,7 +160,7 @@ const Teams: React.FC = () => {
                                         <tr>
                                             <th className="p-4 pl-6">Player Name</th>
                                             {showRoleColumn ? <th className="p-4">Role</th> : null}
-                                            <th className="p-4">Country</th>
+                                            {showCountryColumn ? <th className="p-4">Country</th> : null}
                                             {showAcquisitionColumn ? <th className="p-4 text-right pr-6">Acquisition</th> : null}
                                         </tr>
                                     </thead>
@@ -188,7 +189,9 @@ const Teams: React.FC = () => {
                                                     ) : null}
                                                     </td>
                                                 ) : null}
-                                                <td className="p-4 text-slate-400 font-medium">{player.country}</td>
+                                                {showCountryColumn ? (
+                                                    <td className="p-4 text-slate-400 font-medium">{player.country}</td>
+                                                ) : null}
                                                 {showAcquisitionColumn ? (
                                                     <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">
                                                         {getPlayerAcquisitionLabel(player) || null}
