@@ -477,7 +477,6 @@ const Admin: React.FC = () => {
                           <label className="block text-slate-400 text-xs mb-1">Country</label>
                           <input 
                             type="text" 
-                            required
                             className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                             value={newPlayerCountry}
                             onChange={e => setNewPlayerCountry(e.target.value)}
@@ -491,7 +490,6 @@ const Admin: React.FC = () => {
                           <input 
                             type="text" 
                             placeholder="e.g. WK-Batter"
-                            required
                             className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                             value={newPlayerRole}
                             onChange={e => setNewPlayerRole(e.target.value)}
