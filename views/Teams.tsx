@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatCurrency } from '../constants';
-import { getPlayerDisplayName, getPlayerDisplayRole } from '../lib/playerDisplay';
+import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, isCaptain } from '../lib/playerDisplay';
 import { Users, IndianRupee, Shield, ChevronRight } from 'lucide-react';
 
 const Teams: React.FC = () => {
@@ -158,7 +158,7 @@ const Teams: React.FC = () => {
                                             <th className="p-4 pl-6">Player Name</th>
                                             <th className="p-4">Role</th>
                                             <th className="p-4">Country</th>
-                                            <th className="p-4 text-right pr-6">Sold Price</th>
+                                            <th className="p-4 text-right pr-6">Acquisition</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800 text-sm">
@@ -169,14 +169,21 @@ const Teams: React.FC = () => {
                                                         <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
                                                             {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : null}
                                                         </div>
-                                                        <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{getPlayerDisplayName(player)}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{getPlayerDisplayName(player)}</div>
+                                                            {isCaptain(player) && (
+                                                                <span className="bg-amber-500/15 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold">
+                                                                    Captain
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-slate-300">
                                                     <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{getPlayerDisplayRole(player)}</span>
                                                 </td>
                                                 <td className="p-4 text-slate-400 font-medium">{player.country}</td>
-                                                <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">{formatCurrency(player.soldPrice || 0)}</td>
+                                                <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">{getPlayerAcquisitionLabel(player)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

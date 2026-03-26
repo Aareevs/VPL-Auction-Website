@@ -68,7 +68,7 @@ const getStatsToDisplay = (player: Player): { label: string; value: string | num
 
 
 const Dashboard: React.FC = () => {
-  const { currentPlayer, currentBid, currentBidTeamId, teams, bidHistory, players } = useAuction();
+  const { currentPlayer, currentBid, currentBidTeamId, teams, bidHistory, players, sets } = useAuction();
   
   // Include both SOLD and PASSED (Unsold) players
   const recentSold = players
@@ -367,6 +367,8 @@ const Dashboard: React.FC = () => {
                 ) : (
                     recentSold.map(player => {
                         const team = teams.find(t => t.id === player.teamId);
+                        const playerSet = sets.find(s => s.id === player.set);
+                        const setName = playerSet ? playerSet.name : `Set ${player.set}`;
                         const isUnsold = player.status === PlayerStatus.PASSED;
                         
                         return (
@@ -384,7 +386,7 @@ const Dashboard: React.FC = () => {
                                     <div className="text-white font-bold truncate">{player.name}</div>
                                     <div className="text-xs text-slate-400 truncate">
                                         {isUnsold ? (
-                                            <span className="text-slate-500">Unsold in Set {player.set}</span>
+                                            <span className="text-slate-500">Unsold in {setName}</span>
                                         ) : (
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <span className="text-slate-400">Sold to</span>

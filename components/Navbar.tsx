@@ -59,7 +59,6 @@ const Navbar: React.FC = () => {
              </div>
              <div className="flex flex-col">
                 <span className="text-xs text-slate-300 font-medium max-w-[100px] truncate">{profile?.full_name || user.email}</span>
-                <span className="text-[10px] text-slate-500 uppercase leading-none">{profile?.role || 'Guest'}</span>
              </div>
              <div className="w-px h-6 bg-slate-600 mx-1"></div>
              <button 

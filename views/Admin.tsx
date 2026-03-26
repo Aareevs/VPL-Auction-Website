@@ -352,8 +352,9 @@ const Admin: React.FC = () => {
 
     }
 
-    const resolvedSoldPrice = playerStatusOverride === PlayerStatus.SOLD
-      ? Math.max(parseInt(manualSoldPrice || String(newPlayerPrice), 10) || newPlayerPrice, 0)
+    const parsedSoldPrice = parseInt(manualSoldPrice, 10);
+    const resolvedSoldPrice = playerStatusOverride === PlayerStatus.SOLD && !Number.isNaN(parsedSoldPrice)
+      ? Math.max(parsedSoldPrice, 0)
       : 0;
     
     const playerData: Player = {
@@ -799,7 +800,7 @@ const Admin: React.FC = () => {
                                       value={manualSoldPrice}
                                       onChange={e => setManualSoldPrice(e.target.value)}
                                       disabled={playerStatusOverride !== PlayerStatus.SOLD}
-                                      placeholder={`Defaults to base price (${newPlayerPrice})`}
+                                      placeholder="Leave blank for direct assignment"
                                   />
                               </div>
                           </div>

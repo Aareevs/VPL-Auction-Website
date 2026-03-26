@@ -2,7 +2,7 @@ import React from 'react';
 import { X, Trophy, DollarSign, Users } from 'lucide-react';
 import { Team, Player } from '../types';
 import { formatCurrency } from '../constants';
-import { getPlayerDisplayName, getPlayerDisplayRole } from '../lib/playerDisplay';
+import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, isCaptain } from '../lib/playerDisplay';
 
 interface TeamDetailModalProps {
   team: Team;
@@ -62,11 +62,18 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
                                {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">IMG</div>}
                            </div>
                            <div className="min-w-0 flex-1">
-                               <div className="text-white font-bold truncate leading-tight">{getPlayerDisplayName(player)}</div>
+                               <div className="flex items-center gap-2 min-w-0">
+                                   <div className="text-white font-bold truncate leading-tight">{getPlayerDisplayName(player)}</div>
+                                   {isCaptain(player) && (
+                                       <span className="bg-amber-500/15 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold flex-shrink-0">
+                                           Captain
+                                       </span>
+                                   )}
+                               </div>
                                <div className="text-xs text-slate-400 truncate mt-0.5">{getPlayerDisplayRole(player)}</div>
                            </div>
                            <div className="text-right">
-                               <div className="text-green-400 font-bold font-mono text-sm">{formatCurrency(player.soldPrice || 0)}</div>
+                               <div className="text-green-400 font-bold font-mono text-sm">{getPlayerAcquisitionLabel(player)}</div>
                            </div>
                        </div>
                    ))}
