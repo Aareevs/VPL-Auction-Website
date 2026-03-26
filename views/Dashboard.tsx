@@ -186,7 +186,7 @@ const Dashboard: React.FC = () => {
             {currentPlayer ? (
                 <div className="relative w-full h-full min-h-[600px] z-10 overflow-hidden">
                     {currentPlayer.imageUrl ? (
-                        <div className="absolute inset-0 flex items-end justify-center z-0 px-4 pt-6 pb-28 md:px-8 md:pb-24">
+                        <div className="absolute inset-0 flex items-end justify-center z-0 px-4 pt-6 pb-40 md:px-8 md:pb-36">
                             <img
                                 src={currentPlayer.imageUrl}
                                 alt={currentPlayer.name}
