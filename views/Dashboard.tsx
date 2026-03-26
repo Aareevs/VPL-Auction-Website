@@ -211,6 +211,20 @@ const Dashboard: React.FC = () => {
                                 {currentPlayer.role || 'Player'}
                             </span>
                         </div>
+                        <div className="mt-6 inline-flex flex-col items-center rounded-2xl border border-yellow-400/20 bg-black/45 px-8 py-4 backdrop-blur-md shadow-[0_0_40px_rgba(15,23,42,0.45)]">
+                            <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
+                                {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
+                            </div>
+                            <div className={`mt-2 text-4xl md:text-5xl font-black display-font ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
+                                {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
+                            </div>
+                            {holdingTeam && currentBid > currentPlayer.basePrice ? (
+                                <div className="mt-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-slate-300">
+                                    <span className="text-slate-500">Held By</span>
+                                    <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
+                                </div>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
             ) : (
