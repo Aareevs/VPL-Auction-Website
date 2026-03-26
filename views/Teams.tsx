@@ -180,10 +180,14 @@ const Teams: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-slate-300">
-                                                    <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{getPlayerDisplayRole(player)}</span>
+                                                    {getPlayerDisplayRole(player) ? (
+                                                        <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{getPlayerDisplayRole(player)}</span>
+                                                    ) : null}
                                                 </td>
                                                 <td className="p-4 text-slate-400 font-medium">{player.country}</td>
-                                                <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">{getPlayerAcquisitionLabel(player)}</td>
+                                                <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">
+                                                    {getPlayerAcquisitionLabel(player) || null}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

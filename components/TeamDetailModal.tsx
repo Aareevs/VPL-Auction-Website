@@ -70,10 +70,14 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
                                        </span>
                                    )}
                                </div>
-                               <div className="text-xs text-slate-400 truncate mt-0.5">{getPlayerDisplayRole(player)}</div>
+                               {getPlayerDisplayRole(player) ? (
+                                   <div className="text-xs text-slate-400 truncate mt-0.5">{getPlayerDisplayRole(player)}</div>
+                               ) : null}
                            </div>
                            <div className="text-right">
-                               <div className="text-green-400 font-bold font-mono text-sm">{getPlayerAcquisitionLabel(player)}</div>
+                               {getPlayerAcquisitionLabel(player) ? (
+                                   <div className="text-green-400 font-bold font-mono text-sm">{getPlayerAcquisitionLabel(player)}</div>
+                               ) : null}
                            </div>
                        </div>
                    ))}

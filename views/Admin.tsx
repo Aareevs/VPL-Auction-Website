@@ -353,9 +353,11 @@ const Admin: React.FC = () => {
     }
 
     const parsedSoldPrice = parseInt(manualSoldPrice, 10);
-    const resolvedSoldPrice = playerStatusOverride === PlayerStatus.SOLD && !Number.isNaN(parsedSoldPrice)
-      ? Math.max(parsedSoldPrice, 0)
-      : 0;
+    const resolvedSoldPrice = makeCaptain
+      ? 0
+      : playerStatusOverride === PlayerStatus.SOLD && !Number.isNaN(parsedSoldPrice)
+        ? Math.max(parsedSoldPrice, 0)
+        : 0;
     
     const playerData: Player = {
       id: editingPlayerId || Date.now().toString(),
