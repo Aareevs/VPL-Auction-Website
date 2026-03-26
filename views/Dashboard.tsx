@@ -194,7 +194,7 @@ const Dashboard: React.FC = () => {
                         
                         {/* Huge Player Image (Cutout) */}
                         {currentPlayer.imageUrl && (
-                            <div className="absolute inset-0 flex items-center justify-center z-0 pt-10 px-10">
+                            <div className="absolute inset-0 flex items-start justify-center z-0 pt-12 px-10 pb-[220px]">
                                 <img 
                                     src={currentPlayer.imageUrl} 
                                     alt={currentPlayer.name} 
@@ -204,11 +204,11 @@ const Dashboard: React.FC = () => {
                         )}
 
                         {/* Gradient fade to ensure text at bottom is readable */}
-                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent z-10 pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none"></div>
 
                         {/* Content at Bottom Center */}
-                        <div className="relative z-20 pb-12 pt-20 px-6 flex flex-col items-center text-center w-full">
-                            <h2 className="text-5xl md:text-7xl lg:text-[90px] text-white font-black display-font leading-none tracking-tight uppercase drop-shadow-2xl mb-8 transform -skew-x-6">
+                        <div className="relative z-20 pb-8 pt-10 px-6 flex flex-col items-center text-center w-full">
+                            <h2 className="text-5xl md:text-6xl lg:text-[80px] text-white font-black display-font leading-none tracking-tight uppercase drop-shadow-2xl mb-6 transform -skew-x-6 mt-auto">
                                 {currentPlayer.name}
                             </h2>
 
