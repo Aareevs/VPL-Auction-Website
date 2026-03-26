@@ -51,6 +51,10 @@ DROP POLICY IF EXISTS "Authenticated users can insert auction sets" ON auction_s
 CREATE POLICY "Authenticated users can insert auction sets"
   ON auction_sets FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update auction sets" ON auction_sets;
+CREATE POLICY "Authenticated users can update auction sets"
+  ON auction_sets FOR UPDATE TO authenticated USING (true);
+
 -- 5. ADMIN_EMAILS table
 ALTER TABLE admin_emails ENABLE ROW LEVEL SECURITY;
 

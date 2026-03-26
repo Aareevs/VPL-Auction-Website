@@ -18,10 +18,16 @@ const SoldOverlay: React.FC<SoldOverlayProps> = ({ team, player, price, onComple
         return () => clearTimeout(timer);
     }, [onComplete]);
 
-    if (!team) return null;
+    if (!team) {
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-red-900/90 text-white font-bold text-4xl">
+                DEBUG: SOLD OVERLAY RENDERED BUT TEAM WAS NOT FOUND. Team ID was: {player.teamId}
+            </div>
+        );
+    }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md animate-fade-in transition-all duration-1000">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md animate-fadeIn transition-all duration-1000">
             
             <div className="relative flex flex-col items-center">
                 {/* Player Card (Dimmed) */}
