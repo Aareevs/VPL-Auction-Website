@@ -9,6 +9,8 @@ const Teams: React.FC = () => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || '');
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  const showRoleColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerDisplayRole(player)) : false;
+  const showAcquisitionColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerAcquisitionLabel(player)) : false;
 
   return (
     <div className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
@@ -156,9 +158,9 @@ const Teams: React.FC = () => {
                                     <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider font-bold">
                                         <tr>
                                             <th className="p-4 pl-6">Player Name</th>
-                                            <th className="p-4">Role</th>
+                                            {showRoleColumn ? <th className="p-4">Role</th> : null}
                                             <th className="p-4">Country</th>
-                                            <th className="p-4 text-right pr-6">Acquisition</th>
+                                            {showAcquisitionColumn ? <th className="p-4 text-right pr-6">Acquisition</th> : null}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800 text-sm">
@@ -179,15 +181,19 @@ const Teams: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="p-4 text-slate-300">
+                                                {showRoleColumn ? (
+                                                    <td className="p-4 text-slate-300">
                                                     {getPlayerDisplayRole(player) ? (
                                                         <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{getPlayerDisplayRole(player)}</span>
                                                     ) : null}
-                                                </td>
+                                                    </td>
+                                                ) : null}
                                                 <td className="p-4 text-slate-400 font-medium">{player.country}</td>
-                                                <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">
-                                                    {getPlayerAcquisitionLabel(player) || null}
-                                                </td>
+                                                {showAcquisitionColumn ? (
+                                                    <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">
+                                                        {getPlayerAcquisitionLabel(player) || null}
+                                                    </td>
+                                                ) : null}
                                             </tr>
                                         ))}
                                     </tbody>

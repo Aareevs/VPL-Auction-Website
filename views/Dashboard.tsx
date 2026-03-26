@@ -6,6 +6,7 @@ import TeamDetailModal from '../components/TeamDetailModal';
 import { Player, PlayerStatus, Team } from '../types';
 import SoldOverlay from '../components/SoldOverlay';
 import UnsoldOverlay from '../components/UnsoldOverlay';
+import { isCaptain } from '../lib/playerDisplay';
 
 const getCountryFlag = (country: string) => {
   const c = country.toLowerCase().trim();
@@ -72,7 +73,7 @@ const Dashboard: React.FC = () => {
   
   // Include both SOLD and PASSED (Unsold) players
   const recentSold = players
-      .filter(p => p.status === PlayerStatus.SOLD || p.status === PlayerStatus.PASSED)
+      .filter(p => (p.status === PlayerStatus.SOLD || p.status === PlayerStatus.PASSED) && !isCaptain(p))
       // Sort by when they finished? We don't have a timestamp on status change, 
       // but assuming they come in order of IDs or we rely on 'updated_at' if we had it.
       // For now, we rely on the order they appear in the list, which might be ID based.
@@ -127,9 +128,9 @@ const Dashboard: React.FC = () => {
      
      // Check for transitions ONLY if we are tracking the same player
      if (prev && prev.id === currentData.id) {
-         if (prev.status !== PlayerStatus.SOLD && currentData.status === PlayerStatus.SOLD) {
-             // SOLD Transition
-             if (playerObj) {
+        if (prev.status !== PlayerStatus.SOLD && currentData.status === PlayerStatus.SOLD) {
+            // SOLD Transition
+            if (playerObj && !isCaptain(playerObj)) {
                  const team = teams.find(t => t.id === playerObj.teamId);
                  setSoldAnimationData({
                      team, 

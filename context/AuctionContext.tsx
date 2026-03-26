@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import { supabase } from '../lib/supabaseClient';
 import { Player, Team, Bid, PlayerStatus, AuctionSet } from '../types';
 import { INITIAL_TEAMS } from '../constants';
+import { isCaptain } from '../lib/playerDisplay';
 
 interface TeamOverride {
   team_id: string;
@@ -48,7 +49,13 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const teams = useMemo(() => {
     return INITIAL_TEAMS.map(team => {
       const override = teamOverrides.find(o => o.team_id === team.id);
-      const teamPlayers = players.filter(p => p.teamId === team.id);
+      const teamPlayers = players
+        .filter(p => p.teamId === team.id)
+        .sort((a, b) => {
+          const captainDelta = Number(isCaptain(b)) - Number(isCaptain(a));
+          if (captainDelta !== 0) return captainDelta;
+          return a.name.localeCompare(b.name);
+        });
       const spent = teamPlayers.reduce((sum, p) => sum + (p.soldPrice || 0), 0);
       return {
         ...team,
