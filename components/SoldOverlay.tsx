@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Gavel } from 'lucide-react';
 import { Player, Team } from '../types';
-import { formatCurrency } from '../constants';
+import { formatAuctionValue } from '../constants';
+import { useAuction } from '../context/AuctionContext';
 
 interface SoldOverlayProps {
     team: Team | undefined;
@@ -11,6 +12,7 @@ interface SoldOverlayProps {
 }
 
 const SoldOverlay: React.FC<SoldOverlayProps> = ({ team, player, price, onComplete }) => {
+    const { valuationMode } = useAuction();
     useEffect(() => {
         const timer = setTimeout(() => {
             onComplete();
@@ -68,7 +70,7 @@ const SoldOverlay: React.FC<SoldOverlayProps> = ({ team, player, price, onComple
                     </div>
 
                     <div className="text-green-400 font-mono font-bold text-4xl drop-shadow-lg">
-                        {formatCurrency(price)}
+                        {formatAuctionValue(price, valuationMode)}
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Player, Team, Bid, PlayerStatus, AuctionSet } from '../types';
-import { INITIAL_TEAMS } from '../constants';
+import { AuctionValueMode, Player, Team, Bid, PlayerStatus, AuctionSet } from '../types';
+import { getAuctionBudget, INITIAL_TEAMS } from '../constants';
 import { isCaptain } from '../lib/playerDisplay';
 
 interface TeamOverride {
@@ -15,6 +15,7 @@ interface TeamOverride {
 interface AuctionContextType {
   teams: Team[];
   players: Player[];
+  valuationMode: AuctionValueMode;
   currentPlayer: Player | null;
   currentBid: number;
   currentBidTeamId: string | null;
@@ -34,9 +35,11 @@ interface AuctionContextType {
   resetAuction: () => void;
   deletePlayer: (playerId: string) => void;
   updateTeam: (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => Promise<void>;
+  updateValuationMode: (mode: AuctionValueMode) => Promise<void>;
 }
 
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
+const AUCTION_MODE_STORAGE_KEY = 'vpl-auction-mode';
 
 export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sets, setSets] = useState<AuctionSet[]>([]);
@@ -44,9 +47,15 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
   const [teamOverrides, setTeamOverrides] = useState<TeamOverride[]>([]);
+  const [valuationMode, setValuationMode] = useState<AuctionValueMode>(() => {
+    if (typeof window === 'undefined') return 'currency';
+    const storedMode = window.localStorage.getItem(AUCTION_MODE_STORAGE_KEY);
+    return storedMode === 'points' ? 'points' : 'currency';
+  });
 
   // Derived State
   const teams = useMemo(() => {
+    const teamBudget = getAuctionBudget(valuationMode);
     return INITIAL_TEAMS.map(team => {
       const override = teamOverrides.find(o => o.team_id === team.id);
       const teamPlayers = players
@@ -63,11 +72,12 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         shortName: override?.short_name || team.shortName,
         logoUrl: override?.logo_url || team.logoUrl,
         primaryColor: override?.primary_color || team.primaryColor,
-        remainingPurse: team.totalPurse - spent,
+        totalPurse: teamBudget,
+        remainingPurse: teamBudget - spent,
         squad: teamPlayers
       };
     });
-  }, [players, teamOverrides]);
+  }, [players, teamOverrides, valuationMode]);
 
   const currentPlayer = useMemo(() => {
     if (!auctionState?.current_player_id) return null;
@@ -81,6 +91,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     fetchInitialData();
     fetchTeamOverrides();
+    fetchAuctionSettings();
 
     // Subscribe to Players changes
     const playerSub = supabase
@@ -456,6 +467,39 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (!error && data) setTeamOverrides(data as TeamOverride[]);
   };
 
+  const fetchAuctionSettings = async () => {
+      const { data, error } = await supabase
+          .from('auction_settings')
+          .select('valuation_mode')
+          .eq('id', 1)
+          .maybeSingle();
+
+      if (!error && data?.valuation_mode) {
+          const mode = data.valuation_mode === 'points' ? 'points' : 'currency';
+          setValuationMode(mode);
+          if (typeof window !== 'undefined') {
+              window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+          }
+      }
+  };
+
+  const updateValuationMode = async (mode: AuctionValueMode) => {
+      setValuationMode(mode);
+      if (typeof window !== 'undefined') {
+          window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+      }
+
+      const { error } = await supabase.from('auction_settings').upsert({
+          id: 1,
+          valuation_mode: mode,
+          updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+          console.warn('Failed to persist auction mode, using local storage fallback:', error.message);
+      }
+  };
+
   const updateTeam = async (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => {
       const dbUpdates: any = { updated_at: new Date().toISOString() };
       if (updates.name !== undefined) dbUpdates.name = updates.name;
@@ -477,6 +521,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     <AuctionContext.Provider value={{
       teams,
       players,
+      valuationMode,
       currentPlayer,
       currentBid,
       currentBidTeamId,
@@ -493,7 +538,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       passPlayer,
       resetAuction,
       deletePlayer,
-      updateTeam
+      updateTeam,
+      updateValuationMode
     }}>
       {children}
     </AuctionContext.Provider>

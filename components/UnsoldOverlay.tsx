@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Player } from '../types';
-import { formatCurrency } from '../constants';
 
 interface UnsoldOverlayProps {
   player: Player;

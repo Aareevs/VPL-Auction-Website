@@ -1,5 +1,7 @@
 // ... (existing types)
 
+export type AuctionValueMode = 'currency' | 'points';
+
 export enum PlayerStatus {
   UNSOLD = 'UNSOLD',
   ON_AUCTION = 'ON_AUCTION',

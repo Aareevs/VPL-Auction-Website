@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
-import { formatCurrency } from '../constants';
+import { formatAuctionValue } from '../constants';
 import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, isCaptain } from '../lib/playerDisplay';
 import { Users, IndianRupee, Shield, ChevronRight } from 'lucide-react';
 
 const Teams: React.FC = () => {
-  const { teams } = useAuction();
+  const { teams, valuationMode } = useAuction();
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || '');
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
   const showRoleColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerDisplayRole(player)) : false;
-  const showAcquisitionColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerAcquisitionLabel(player)) : false;
+  const showAcquisitionColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerAcquisitionLabel(player, valuationMode)) : false;
 
   return (
     <div className="min-h-screen bg-slate-950 pt-24 pb-12 px-6">
@@ -63,7 +63,7 @@ const Teams: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm font-bold text-slate-300">
-                                        {formatCurrency(team.remainingPurse)}
+                                        {formatAuctionValue(team.remainingPurse, valuationMode)}
                                     </div>
                                     <div className={`text-xs mt-1 ${team.squad.length >= 7 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
                                         {team.squad.length} / 7 Players
@@ -114,8 +114,8 @@ const Teams: React.FC = () => {
                                 <IndianRupee size={80} />
                             </div>
                             <div className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-bold">Purse Remaining</div>
-                            <div className="text-4xl text-green-400 font-bold display-font">{formatCurrency(selectedTeam.remainingPurse)}</div>
-                            <div className="text-xs text-slate-500 mt-2 font-mono">Out of {formatCurrency(selectedTeam.totalPurse)}</div>
+                            <div className="text-4xl text-green-400 font-bold display-font">{formatAuctionValue(selectedTeam.remainingPurse, valuationMode)}</div>
+                            <div className="text-xs text-slate-500 mt-2 font-mono">Out of {formatAuctionValue(selectedTeam.totalPurse, valuationMode)}</div>
                         </div>
                         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
                             <div className="absolute right-0 bottom-0 opacity-5 transform translate-x-4 translate-y-4 group-hover:scale-110 transition-transform">
@@ -129,7 +129,7 @@ const Teams: React.FC = () => {
                                 <Shield size={80} />
                             </div>
                             <div className="text-slate-400 text-sm uppercase tracking-wider mb-1 font-bold">Total Spent</div>
-                            <div className="text-4xl text-white font-bold display-font">{formatCurrency(selectedTeam.totalPurse - selectedTeam.remainingPurse)}</div>
+                            <div className="text-4xl text-white font-bold display-font">{formatAuctionValue(selectedTeam.totalPurse - selectedTeam.remainingPurse, valuationMode)}</div>
                             <div className="text-xs text-slate-500 mt-2 font-mono">Total Investment</div>
                         </div>
                     </div>
@@ -189,7 +189,7 @@ const Teams: React.FC = () => {
                                                 ) : null}
                                                 {showAcquisitionColumn ? (
                                                     <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">
-                                                        {getPlayerAcquisitionLabel(player) || null}
+                                                        {getPlayerAcquisitionLabel(player, valuationMode) || null}
                                                     </td>
                                                 ) : null}
                                             </tr>

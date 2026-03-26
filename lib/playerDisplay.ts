@@ -1,5 +1,5 @@
-import { Player } from '../types';
-import { formatCurrency } from '../constants';
+import { AuctionValueMode, Player } from '../types';
+import { formatAuctionValue } from '../constants';
 
 export const CAPTAIN_SUFFIX = ' (C)';
 
@@ -10,5 +10,5 @@ export const getPlayerDisplayName = (player: Player) =>
 
 export const getPlayerDisplayRole = (player: Player) => (isCaptain(player) ? '' : player.role);
 
-export const getPlayerAcquisitionLabel = (player: Player) =>
-  !isCaptain(player) && player.soldPrice && player.soldPrice > 0 ? formatCurrency(player.soldPrice) : '';
+export const getPlayerAcquisitionLabel = (player: Player, mode: AuctionValueMode) =>
+  !isCaptain(player) && player.soldPrice && player.soldPrice > 0 ? formatAuctionValue(player.soldPrice, mode) : '';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
-import { formatCurrency } from '../constants';
+import { formatAuctionValue, getAuctionUnitLabel } from '../constants';
 import { supabase } from '../lib/supabaseClient';
 import { CAPTAIN_SUFFIX, isCaptain, getPlayerDisplayName, getPlayerDisplayRole } from '../lib/playerDisplay';
 import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail, ArrowUp, ArrowDown, Save, Upload, Loader2 } from 'lucide-react';
@@ -40,7 +40,9 @@ const Admin: React.FC = () => {
     createSet,
     updatePlayerSet,
     reorderSets,
-    updateTeam
+    updateTeam,
+    valuationMode,
+    updateValuationMode
   } = useAuction();
 
   const { user } = useAuth();
@@ -422,6 +424,19 @@ const Admin: React.FC = () => {
   };
 
   const currentSetName = currentPlayer ? sets.find(s => s.id === currentPlayer?.set)?.name : '';
+  const quickBidSteps = valuationMode === 'points'
+    ? [
+        { amount: 1, label: '+1 Pt' },
+        { amount: 2, label: '+2 Pts' },
+        { amount: 5, label: '+5 Pts' },
+        { amount: 10, label: '+10 Pts' }
+      ]
+    : [
+        { amount: 10, label: '+10L' },
+        { amount: 20, label: '+20L' },
+        { amount: 50, label: '+50L' },
+        { amount: 100, label: '+1Cr' }
+      ];
   return (
     <div className="min-h-screen bg-slate-950 pt-20 pb-12 px-6">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -441,8 +456,8 @@ const Admin: React.FC = () => {
                         <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">{currentSetName} | On The Block</span>
                         <h2 className="text-4xl text-white font-bold display-font">{currentPlayer.name}</h2>
                         <div className="flex gap-4 text-slate-400 mt-1">
-                            <span>Base: {formatCurrency(currentPlayer.basePrice)}</span>
-                            <span className="text-yellow-500 font-bold">Current: {formatCurrency(currentBid)}</span>
+                            <span>Base: {formatAuctionValue(currentPlayer.basePrice, valuationMode)}</span>
+                            <span className="text-yellow-500 font-bold">Current: {formatAuctionValue(currentBid, valuationMode)}</span>
                         </div>
                     </div>
 
@@ -474,15 +489,16 @@ const Admin: React.FC = () => {
 
                         <div className="flex flex-col gap-3">
                              <div className="flex gap-2">
-                                <button onClick={() => handleQuickBid(10)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-medium">+10L</button>
-                                <button onClick={() => handleQuickBid(20)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-medium">+20L</button>
-                                <button onClick={() => handleQuickBid(50)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-medium">+50L</button>
-                                <button onClick={() => handleQuickBid(100)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-medium">+1Cr</button>
+                                {quickBidSteps.map(step => (
+                                    <button key={step.label} onClick={() => handleQuickBid(step.amount)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm font-medium">
+                                        {step.label}
+                                    </button>
+                                ))}
                              </div>
                              <div className="flex gap-2">
                                  <input 
                                     type="number" 
-                                    placeholder="Amount (Lakhs)"
+                                    placeholder={`Amount (${getAuctionUnitLabel(valuationMode)})`}
                                     className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                                     value={customBidAmount}
                                     onChange={(e) => setCustomBidAmount(e.target.value)}
@@ -514,6 +530,31 @@ const Admin: React.FC = () => {
                     <p className="text-sm">Select a player from the list below to start.</p>
                 </div>
              )}
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4 gap-4">
+                  <div>
+                      <h3 className="text-white font-bold">Auction Value Mode</h3>
+                      <p className="text-xs text-slate-500 mt-1">Switch between currency purse and 100-point auctions.</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-full p-1">
+                      <button
+                          type="button"
+                          onClick={() => updateValuationMode('currency')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${valuationMode === 'currency' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                      >
+                          Rupees
+                      </button>
+                      <button
+                          type="button"
+                          onClick={() => updateValuationMode('points')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${valuationMode === 'points' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                      >
+                          Points
+                      </button>
+                  </div>
+              </div>
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
@@ -731,7 +772,7 @@ const Admin: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-slate-400 text-xs mb-1">Base (L)</label>
+                            <label className="block text-slate-400 text-xs mb-1">Base ({getAuctionUnitLabel(valuationMode)})</label>
                             <input 
                                 type="number" 
                                 required
@@ -794,7 +835,7 @@ const Admin: React.FC = () => {
                               </div>
 
                               <div>
-                                  <label className="block text-slate-400 text-xs mb-1">Sold Price (L)</label>
+                                  <label className="block text-slate-400 text-xs mb-1">Final Value ({getAuctionUnitLabel(valuationMode)})</label>
                                   <input
                                       type="number"
                                       min={0}
@@ -1040,7 +1081,7 @@ const Admin: React.FC = () => {
                                         </div>
                                         <div>
                                             <div className="text-white font-medium">{getPlayerDisplayName(player)}</div>
-                                            <div className="text-xs text-slate-400">{getPlayerDisplayRole(player)} • {formatCurrency(player.basePrice)}</div>
+                                            <div className="text-xs text-slate-400">{getPlayerDisplayRole(player)} • {formatAuctionValue(player.basePrice, valuationMode)}</div>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -1148,7 +1189,7 @@ const Admin: React.FC = () => {
                                         <div className="min-w-0">
                                             <div className="text-white font-medium truncate">{getPlayerDisplayName(player)}</div>
                                             <div className="text-xs text-slate-400 truncate">
-                                                {team?.name || 'No team'} • {formatCurrency(player.soldPrice || 0)}
+                                                {team?.name || 'No team'} • {formatAuctionValue(player.soldPrice || 0, valuationMode)}
                                             </div>
                                         </div>
                                     </div>

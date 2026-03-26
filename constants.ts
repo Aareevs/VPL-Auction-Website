@@ -1,6 +1,7 @@
-import { Player, PlayerStatus, Team } from './types';
+import { AuctionValueMode, Player, PlayerStatus, Team } from './types';
 
 export const INITIAL_PURSE = 8000; // 80 Crores
+export const INITIAL_POINTS_BUDGET = 100;
 
 export const INITIAL_TEAMS: Team[] = [
   {
@@ -357,3 +358,12 @@ export const formatCurrency = (lakhs: number) => {
   }
   return `₹${lakhs} L`;
 };
+
+export const formatAuctionValue = (value: number, mode: AuctionValueMode) =>
+  mode === 'points' ? `${value} Pts` : formatCurrency(value);
+
+export const getAuctionBudget = (mode: AuctionValueMode) =>
+  mode === 'points' ? INITIAL_POINTS_BUDGET : INITIAL_PURSE;
+
+export const getAuctionUnitLabel = (mode: AuctionValueMode) =>
+  mode === 'points' ? 'Pts' : 'L';

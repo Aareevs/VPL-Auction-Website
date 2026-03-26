@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuction } from '../context/AuctionContext';
-import { formatCurrency } from '../constants';
+import { formatAuctionValue } from '../constants';
 import { Trophy, DollarSign, History, Shield, Globe, UserCheck, Users } from 'lucide-react';
 import TeamDetailModal from '../components/TeamDetailModal';
 import { Player, PlayerStatus, Team } from '../types';
@@ -69,7 +69,7 @@ const getStatsToDisplay = (player: Player): { label: string; value: string | num
 
 
 const Dashboard: React.FC = () => {
-  const { currentPlayer, currentBid, currentBidTeamId, teams, bidHistory, players, sets } = useAuction();
+  const { currentPlayer, currentBid, currentBidTeamId, teams, bidHistory, players, sets, valuationMode } = useAuction();
   
   // Include both SOLD and PASSED (Unsold) players
   const recentSold = players
@@ -218,7 +218,7 @@ const Dashboard: React.FC = () => {
                                  {currentBid > 0 ? (
                                      <>
                                          <div className="text-yellow-400 font-bold text-5xl md:text-6xl display-font tracking-widest animate-pulse">
-                                             <span className="text-white drop-shadow-md">{formatCurrency(currentBid)}</span>
+                                             <span className="text-white drop-shadow-md">{formatAuctionValue(currentBid, valuationMode)}</span>
                                          </div>
                                          {holdingTeam && (
                                              <div className="font-bold text-slate-300 mt-4 flex items-center gap-3">
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
                                      </>
                                  ) : (
                                      <div className="text-red-500 font-bold text-4xl md:text-5xl display-font tracking-wide">
-                                         BASE <span className="text-white ml-4">{formatCurrency(currentPlayer.basePrice)}</span>
+                                         BASE <span className="text-white ml-4">{formatAuctionValue(currentPlayer.basePrice, valuationMode)}</span>
                                      </div>
                                  )}
                             </div>
@@ -280,7 +280,7 @@ const Dashboard: React.FC = () => {
                                 {currentBid > 0 ? (
                                     <div>
                                         <div className="text-yellow-400 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide animate-pulse">
-                                            CURRENT BID : <span className="text-white">{formatCurrency(currentBid)}</span>
+                                            CURRENT BID : <span className="text-white">{formatAuctionValue(currentBid, valuationMode)}</span>
                                         </div>
                                         {holdingTeam && (
                                             <div className="text-sm font-bold text-slate-400 mt-1 flex items-center gap-2">
@@ -290,7 +290,7 @@ const Dashboard: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="text-red-500 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide">
-                                        BASE PRICE : <span className="text-red-500">{formatCurrency(currentPlayer.basePrice)}</span>
+                                        BASE PRICE : <span className="text-red-500">{formatAuctionValue(currentPlayer.basePrice, valuationMode)}</span>
                                     </div>
                                 )}
                             </div>
@@ -344,7 +344,7 @@ const Dashboard: React.FC = () => {
                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-700 border border-slate-600 flex items-center justify-center">
                                      {team?.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[10px] font-bold text-white flex items-center justify-center w-full h-full" style={{ background: team?.primaryColor }}>{team?.shortName}</div>}
                                  </div>
-                                 <span className="text-white font-mono font-bold">{formatCurrency(bid.amount)}</span>
+                                 <span className="text-white font-mono font-bold">{formatAuctionValue(bid.amount, valuationMode)}</span>
                              </div>
                          )
                     })
@@ -398,7 +398,7 @@ const Dashboard: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className={`font-bold text-lg font-mono ${isUnsold ? 'text-red-500' : 'text-green-400'}`}>
-                                    {isUnsold ? 'UNSOLD' : formatCurrency(player.soldPrice || 0)}
+                                    {isUnsold ? 'UNSOLD' : formatAuctionValue(player.soldPrice || 0, valuationMode)}
                                 </div>
                             </div>
                         )
@@ -426,7 +426,7 @@ const Dashboard: React.FC = () => {
                             </div>
                             <div>
                                 <div className="text-white font-bold text-sm">#{team.id} {team.name}</div>
-                                <div className="text-xs text-slate-400">Purse: <span className="text-green-400 font-mono">{formatCurrency(team.remainingPurse)}</span></div>
+                                <div className="text-xs text-slate-400">Purse: <span className="text-green-400 font-mono">{formatAuctionValue(team.remainingPurse, valuationMode)}</span></div>
                             </div>
                         </div>
                         <div className="flex flex-col items-end">

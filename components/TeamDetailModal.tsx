@@ -1,8 +1,9 @@
 import React from 'react';
 import { X, Trophy, DollarSign, Users } from 'lucide-react';
 import { Team, Player } from '../types';
-import { formatCurrency } from '../constants';
+import { formatAuctionValue } from '../constants';
 import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, isCaptain } from '../lib/playerDisplay';
+import { useAuction } from '../context/AuctionContext';
 
 interface TeamDetailModalProps {
   team: Team;
@@ -10,6 +11,7 @@ interface TeamDetailModalProps {
 }
 
 const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
+  const { valuationMode } = useAuction();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
       <div 
@@ -32,7 +34,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
                    <h2 className="text-3xl font-bold text-white display-font mb-1">{team.name}</h2>
                    <div className="flex items-center gap-4 text-sm font-bold">
                        <span className={`flex items-center gap-1.5 ${team.squad.length >= 7 ? 'text-red-400' : 'text-slate-400'}`}><Users size={14} /> {team.squad.length} / 7 Players</span>
-                       <span className="text-green-400 flex items-center gap-1.5"><DollarSign size={14} /> {formatCurrency(team.remainingPurse)} Left</span>
+                       <span className="text-green-400 flex items-center gap-1.5"><DollarSign size={14} /> {formatAuctionValue(team.remainingPurse, valuationMode)} Left</span>
                    </div>
                </div>
            </div>
@@ -75,8 +77,8 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
                                ) : null}
                            </div>
                            <div className="text-right">
-                               {getPlayerAcquisitionLabel(player) ? (
-                                   <div className="text-green-400 font-bold font-mono text-sm">{getPlayerAcquisitionLabel(player)}</div>
+                               {getPlayerAcquisitionLabel(player, valuationMode) ? (
+                                   <div className="text-green-400 font-bold font-mono text-sm">{getPlayerAcquisitionLabel(player, valuationMode)}</div>
                                ) : null}
                            </div>
                        </div>
@@ -87,7 +89,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
 
         {/* Footer Stats */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/30 flex justify-between text-xs text-slate-500 font-mono uppercase tracking-widest">
-            <span>Total Spent: {formatCurrency(team.totalPurse - team.remainingPurse)}</span>
+            <span>Total Spent: {formatAuctionValue(team.totalPurse - team.remainingPurse, valuationMode)}</span>
             <span className={team.squad.length >= 7 ? 'text-red-500 font-bold' : ''}>Squad Limit: {team.squad.length}/7</span>
         </div>
       </div>
