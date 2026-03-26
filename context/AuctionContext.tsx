@@ -3,6 +3,14 @@ import { supabase } from '../lib/supabaseClient';
 import { Player, Team, Bid, PlayerStatus, AuctionSet } from '../types';
 import { INITIAL_TEAMS } from '../constants';
 
+interface TeamOverride {
+  team_id: string;
+  name?: string;
+  short_name?: string;
+  logo_url?: string;
+  primary_color?: string;
+}
+
 interface AuctionContextType {
   teams: Team[];
   players: Player[];
@@ -24,6 +32,7 @@ interface AuctionContextType {
   passPlayer: () => void;
   resetAuction: () => void;
   deletePlayer: (playerId: string) => void;
+  updateTeam: (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => Promise<void>;
 }
 
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
@@ -33,19 +42,25 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [players, setPlayers] = useState<Player[]>([]);
   const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
+  const [teamOverrides, setTeamOverrides] = useState<TeamOverride[]>([]);
 
   // Derived State
   const teams = useMemo(() => {
     return INITIAL_TEAMS.map(team => {
+      const override = teamOverrides.find(o => o.team_id === team.id);
       const teamPlayers = players.filter(p => p.teamId === team.id);
       const spent = teamPlayers.reduce((sum, p) => sum + (p.soldPrice || 0), 0);
       return {
         ...team,
+        name: override?.name || team.name,
+        shortName: override?.short_name || team.shortName,
+        logoUrl: override?.logo_url || team.logoUrl,
+        primaryColor: override?.primary_color || team.primaryColor,
         remainingPurse: team.totalPurse - spent,
         squad: teamPlayers
       };
     });
-  }, [players]);
+  }, [players, teamOverrides]);
 
   const currentPlayer = useMemo(() => {
     if (!auctionState?.current_player_id) return null;
@@ -58,6 +73,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Initial Fetch & Realtime Subscription
   useEffect(() => {
     fetchInitialData();
+    fetchTeamOverrides();
 
     // Subscribe to Players changes
     const playerSub = supabase
@@ -112,10 +128,29 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       })
       .subscribe();
 
+    // Subscribe to team_overrides changes
+    const teamOverrideSub = supabase
+      .channel('public:team_overrides')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_overrides' }, (payload) => {
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+              setTeamOverrides(prev => {
+                  const idx = prev.findIndex(o => o.team_id === payload.new.team_id);
+                  if (idx >= 0) {
+                      const updated = [...prev];
+                      updated[idx] = payload.new as TeamOverride;
+                      return updated;
+                  }
+                  return [...prev, payload.new as TeamOverride];
+              });
+          }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(playerSub);
       supabase.removeChannel(setsSub);
       supabase.removeChannel(auctionSub);
+      supabase.removeChannel(teamOverrideSub);
     };
   }, []);
 
@@ -213,6 +248,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const updatePlayer = async (player: Player) => {
+      const isSold = player.status === PlayerStatus.SOLD;
       const { error } = await supabase.from('players').update({
           name: player.name,
           country: player.country,
@@ -220,12 +256,30 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
           base_price: player.basePrice,
           set_no: player.set,
           stats: player.stats,
-          image_url: player.imageUrl
+          image_url: player.imageUrl,
+          status: player.status,
+          sold_price: isSold ? (player.soldPrice || 0) : 0,
+          team_id: isSold ? (player.teamId || null) : null,
+          updated_at: new Date().toISOString()
       }).eq('id', player.id);
 
       if (error) {
           alert("Error updating player: " + error.message);
       } else {
+          if (auctionState?.current_player_id === player.id && player.status !== PlayerStatus.ON_AUCTION) {
+              const { error: auctionError } = await supabase.from('auction_state').update({
+                  current_player_id: null,
+                  status: 'waiting',
+                  current_bid: 0,
+                  current_bidder_team_id: null
+              }).eq('id', 1);
+
+              if (auctionError) {
+                  alert("Player updated, but failed to reset live auction state: " + auctionError.message);
+                  return;
+              }
+          }
+
           alert("Player updated successfully!");
       }
   };
@@ -390,6 +444,28 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       if(error) alert("Error moving player: " + error.message);
   }
 
+  const fetchTeamOverrides = async () => {
+      const { data, error } = await supabase.from('team_overrides').select('*');
+      if (!error && data) setTeamOverrides(data as TeamOverride[]);
+  };
+
+  const updateTeam = async (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => {
+      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.shortName !== undefined) dbUpdates.short_name = updates.shortName;
+      if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl;
+      if (updates.primaryColor !== undefined) dbUpdates.primary_color = updates.primaryColor;
+
+      const { error } = await supabase.from('team_overrides').upsert({
+          team_id: teamId,
+          ...dbUpdates
+      });
+
+      if (error) {
+          alert('Error updating team: ' + error.message);
+      }
+  }
+
   return (
     <AuctionContext.Provider value={{
       teams,
@@ -409,7 +485,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       sellPlayer,
       passPlayer,
       resetAuction,
-      deletePlayer
+      deletePlayer,
+      updateTeam
     }}>
       {children}
     </AuctionContext.Provider>

@@ -12,6 +12,16 @@ interface AdminEmail {
   added_at: string;
 }
 
+const CAPTAIN_SUFFIX = ' (C)';
+
+const stripCaptainSuffix = (name: string) =>
+  name.endsWith(CAPTAIN_SUFFIX) ? name.slice(0, -CAPTAIN_SUFFIX.length) : name;
+
+const applyCaptainSuffix = (name: string, isCaptain: boolean) => {
+  const cleanName = stripCaptainSuffix(name.trim());
+  return isCaptain ? `${cleanName}${CAPTAIN_SUFFIX}` : cleanName;
+};
+
 const Admin: React.FC = () => {
   const { 
     teams, 
@@ -30,7 +40,8 @@ const Admin: React.FC = () => {
     sets,
     createSet,
     updatePlayerSet,
-    reorderSets
+    reorderSets,
+    updateTeam
   } = useAuction();
 
   const { user } = useAuth();
@@ -142,10 +153,34 @@ const Admin: React.FC = () => {
   const [newPlayerImage, setNewPlayerImage] = useState('');
   const [newPlayerPrice, setNewPlayerPrice] = useState(20);
   const [newPlayerSet, setNewPlayerSet] = useState(0);
+  const [playerStatusOverride, setPlayerStatusOverride] = useState<PlayerStatus>(PlayerStatus.UNSOLD);
+  const [manualTeamId, setManualTeamId] = useState('');
+  const [manualSoldPrice, setManualSoldPrice] = useState(0);
+  const [makeCaptain, setMakeCaptain] = useState(false);
   const [manageSetsDialog, setManageSetsDialog] = useState(false);
   const [newSetName, setNewSetName] = useState('');
   const [localSetOrder, setLocalSetOrder] = useState<typeof sets>([]);
   
+  const [editingSetId, setEditingSetId] = useState<number | null>(null);
+  const [editSetName, setEditSetName] = useState('');
+
+  const handleUpdateSetName = async (setId: number) => {
+      if (!editSetName.trim()) return;
+      
+      const { error } = await supabase
+          .from('auction_sets')
+          .update({ name: editSetName.trim() })
+          .eq('id', setId);
+          
+      if (error) {
+          alert("Error updating set name: " + error.message);
+      } else {
+          setEditingSetId(null);
+          // Update the local list so it re-renders immediately
+          const newOrder = localSetOrder.map(s => s.id === setId ? { ...s, name: editSetName.trim() } : s);
+          setLocalSetOrder(newOrder);
+      }
+  };
   // Stats
   const [statsAge, setStatsAge] = useState(0);
   const [statsMatches, setStatsMatches] = useState(0);
@@ -161,13 +196,38 @@ const Admin: React.FC = () => {
   const [selectedBidTeam, setSelectedBidTeam] = useState<string>('');
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
 
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamFormName, setTeamFormName] = useState('');
+  const [teamFormShortName, setTeamFormShortName] = useState('');
+  const [teamFormLogo, setTeamFormLogo] = useState('');
+  const [teamFormColor, setTeamFormColor] = useState('');
+
   // Group unsold players by set
   const unsoldPlayers = players.filter(p => p.status === PlayerStatus.UNSOLD);
+  const soldPlayers = players.filter(p => p.status === PlayerStatus.SOLD);
 
   // Sort sets by display order
   const sortedSets = [...sets].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingTeamLogo, setIsUploadingTeamLogo] = useState(false);
+
+  const uploadImage = async (file: File, folder: 'players' | 'teams') => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `${folder}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+          .from('vpl-images')
+          .upload(filePath, file);
+
+      if (uploadError) {
+          throw uploadError;
+      }
+
+      const { data } = supabase.storage.from('vpl-images').getPublicUrl(filePath);
+      return data.publicUrl;
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -175,24 +235,27 @@ const Admin: React.FC = () => {
 
       setIsUploading(true);
       try {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-          const filePath = `players/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-              .from('vpl-images')
-              .upload(filePath, file);
-
-          if (uploadError) {
-              throw uploadError;
-          }
-
-          const { data } = supabase.storage.from('vpl-images').getPublicUrl(filePath);
-          setNewPlayerImage(data.publicUrl);
+          const publicUrl = await uploadImage(file, 'players');
+          setNewPlayerImage(publicUrl);
       } catch (error: any) {
           alert('Error uploading image: ' + error.message);
       } finally {
           setIsUploading(false);
+      }
+  };
+
+  const handleTeamLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploadingTeamLogo(true);
+      try {
+          const publicUrl = await uploadImage(file, 'teams');
+          setTeamFormLogo(publicUrl);
+      } catch (error: any) {
+          alert('Error uploading logo: ' + error.message);
+      } finally {
+          setIsUploadingTeamLogo(false);
       }
   };
 
@@ -204,6 +267,10 @@ const Admin: React.FC = () => {
       setNewPlayerPrice(20);
       setNewPlayerSet(0);
       setNewPlayerImage('');
+      setPlayerStatusOverride(PlayerStatus.UNSOLD);
+      setManualTeamId('');
+      setManualSoldPrice(0);
+      setMakeCaptain(false);
       setStatsMatches(0);
       setStatsRuns(0);
       setStatsAvg(0);
@@ -220,12 +287,16 @@ const Admin: React.FC = () => {
 
   const handleEditClick = (player: Player) => {
       setEditingPlayerId(player.id);
-      setNewPlayerName(player.name);
+      setNewPlayerName(stripCaptainSuffix(player.name));
       setNewPlayerRole(player.role);
       setNewPlayerCountry(player.country);
       setNewPlayerPrice(player.basePrice);
       setNewPlayerSet(player.set);
       setNewPlayerImage(player.imageUrl || '');
+      setPlayerStatusOverride(player.status);
+      setManualTeamId(player.teamId || '');
+      setManualSoldPrice(player.soldPrice || 0);
+      setMakeCaptain(player.name.endsWith(CAPTAIN_SUFFIX));
       
       setStatsAge(player.stats.age || 0);
       setStatsMatches(player.stats.matches);
@@ -238,18 +309,65 @@ const Admin: React.FC = () => {
       setStatsBestBowling(player.stats.bestBowling || '');
   }
 
-  const handleSavePlayer = (e: React.FormEvent) => {
+  const openTeamEditor = (teamId: string) => {
+      const team = teams.find((item) => item.id === teamId);
+      if (!team) return;
+
+      setEditingTeamId(team.id);
+      setTeamFormName(team.name);
+      setTeamFormShortName(team.shortName);
+      setTeamFormLogo(team.logoUrl || '');
+      setTeamFormColor(team.primaryColor);
+  };
+
+  const closeTeamEditor = () => {
+      setEditingTeamId(null);
+      setTeamFormName('');
+      setTeamFormShortName('');
+      setTeamFormLogo('');
+      setTeamFormColor('');
+  };
+
+  const handleSaveTeam = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingTeamId) return;
+
+      await updateTeam(editingTeamId, {
+          name: teamFormName.trim(),
+          shortName: teamFormShortName.trim().toUpperCase(),
+          logoUrl: teamFormLogo.trim(),
+          primaryColor: teamFormColor
+      });
+
+      closeTeamEditor();
+  };
+
+  const handleSavePlayer = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (playerStatusOverride === PlayerStatus.SOLD) {
+      if (!manualTeamId) {
+        alert('Select a team before saving a sold player.');
+        return;
+      }
+
+      if (!manualSoldPrice || manualSoldPrice <= 0) {
+        alert('Enter a valid sold price before saving a sold player.');
+        return;
+      }
+    }
     
     const playerData: Player = {
       id: editingPlayerId || Date.now().toString(),
-      name: newPlayerName,
+      name: applyCaptainSuffix(newPlayerName, makeCaptain),
       role: newPlayerRole,
       country: newPlayerCountry,
       basePrice: newPlayerPrice,
-      status: editingPlayerId ? (players.find(p => p.id === editingPlayerId)?.status || PlayerStatus.UNSOLD) : PlayerStatus.UNSOLD,
+      status: playerStatusOverride,
       set: newPlayerSet,
       imageUrl: newPlayerImage,
+      soldPrice: playerStatusOverride === PlayerStatus.SOLD ? manualSoldPrice : 0,
+      teamId: playerStatusOverride === PlayerStatus.SOLD ? manualTeamId : undefined,
       stats: {
           age: statsAge,
           matches: statsMatches,
@@ -264,9 +382,9 @@ const Admin: React.FC = () => {
     };
 
     if (editingPlayerId) {
-        updatePlayer(playerData);
+        await updatePlayer(playerData);
     } else {
-        addPlayer(playerData);
+        await addPlayer(playerData);
     }
     
     resetForm();
@@ -396,6 +514,42 @@ const Admin: React.FC = () => {
              )}
           </div>
 
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white font-bold flex items-center gap-2">
+                      <Shield size={18} className="text-cyan-400" />
+                      Team Management
+                  </h3>
+                  <span className="text-xs text-slate-500">Click a team to edit name or logo</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {teams.map(team => (
+                      <button
+                          key={team.id}
+                          type="button"
+                          onClick={() => openTeamEditor(team.id)}
+                          className="text-left bg-slate-800/70 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/40 rounded-xl p-3 transition-colors"
+                      >
+                          <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-700 overflow-hidden flex items-center justify-center">
+                                  {team.logoUrl ? (
+                                      <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                      <div className="text-xs font-bold text-white" style={{ backgroundColor: team.primaryColor, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                          {team.shortName}
+                                      </div>
+                                  )}
+                              </div>
+                              <div className="min-w-0">
+                                  <div className="text-white text-sm font-semibold truncate">{team.name}</div>
+                                  <div className="text-xs text-slate-400">{team.shortName}</div>
+                              </div>
+                          </div>
+                      </button>
+                  ))}
+              </div>
+          </div>
+
           {/* Add/Edit Player Form */}
           <div className={`border border-slate-800 rounded-2xl p-6 transition-all duration-300 ${editingPlayerId ? 'bg-blue-900/20 border-blue-500/50' : 'bg-slate-900'}`}>
               <h3 className="text-white font-bold mb-4 flex items-center justify-between">
@@ -452,8 +606,42 @@ const Admin: React.FC = () => {
                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                            {localSetOrder.map((s, index) => (
                                <div key={s.id} className="flex items-center justify-between bg-slate-900 border border-slate-700 p-2 rounded">
-                                   <div className="text-sm text-slate-300 font-medium px-2">{s.name}</div>
-                                   <div className="flex bg-slate-800 rounded overflow-hidden">
+                                   {editingSetId === s.id ? (
+                                       <div className="flex-1 flex gap-2 mr-2">
+                                           <input 
+                                               type="text" 
+                                               className="flex-1 bg-slate-950 border border-blue-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                               value={editSetName}
+                                               onChange={(e) => setEditSetName(e.target.value)}
+                                               autoFocus
+                                               onKeyDown={(e) => {
+                                                   if (e.key === 'Enter') handleUpdateSetName(s.id);
+                                                   if (e.key === 'Escape') setEditingSetId(null);
+                                               }}
+                                           />
+                                           <button onClick={() => handleUpdateSetName(s.id)} className="bg-blue-600 hover:bg-blue-500 text-white px-2 rounded flex items-center justify-center">
+                                                <Save size={14} />
+                                           </button>
+                                           <button onClick={() => setEditingSetId(null)} className="bg-slate-700 hover:bg-slate-600 text-white px-2 rounded flex items-center justify-center">
+                                                <X size={14} />
+                                           </button>
+                                       </div>
+                                   ) : (
+                                       <>
+                                           <div className="text-sm text-slate-300 font-medium px-2 flex items-center gap-2">
+                                               {s.name}
+                                               <button 
+                                                   onClick={(e) => {
+                                                       e.preventDefault();
+                                                       setEditingSetId(s.id);
+                                                       setEditSetName(s.name);
+                                                   }}
+                                                   className="text-slate-500 hover:text-blue-400 p-1"
+                                               >
+                                                   <Pencil size={12} />
+                                               </button>
+                                           </div>
+                                           <div className="flex bg-slate-800 rounded overflow-hidden">
                                        <button 
                                            onClick={(e) => {
                                                e.preventDefault();
@@ -483,6 +671,8 @@ const Admin: React.FC = () => {
                                            <ArrowDown size={14} />
                                        </button>
                                    </div>
+                               </>
+                               )}
                                </div>
                            ))}
                            {localSetOrder.length === 0 && <div className="text-xs text-slate-500 text-center py-2">No sets available.</div>}
@@ -550,6 +740,71 @@ const Admin: React.FC = () => {
                           </div>
                       </div>
                   </div>
+
+                  {editingPlayerId && (
+                      <div className="bg-slate-800/50 p-4 rounded-xl border border-amber-500/20 space-y-4">
+                          <div className="flex items-center justify-between gap-4">
+                              <div>
+                                  <div className="text-sm font-bold text-amber-300">Manual Auction Override</div>
+                                  <div className="text-xs text-slate-400">Force roster state without running the live auction flow.</div>
+                              </div>
+                              <label className="flex items-center gap-3 text-sm text-white">
+                                  <span>Make Captain</span>
+                                  <button
+                                      type="button"
+                                      onClick={() => setMakeCaptain(prev => !prev)}
+                                      className={`relative w-12 h-7 rounded-full transition-colors ${makeCaptain ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                                  >
+                                      <span
+                                          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${makeCaptain ? 'translate-x-6' : 'translate-x-1'}`}
+                                      />
+                                  </button>
+                              </label>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                  <label className="block text-slate-400 text-xs mb-1">Status</label>
+                                  <select
+                                      className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500 appearance-none"
+                                      value={playerStatusOverride}
+                                      onChange={e => setPlayerStatusOverride(e.target.value as PlayerStatus)}
+                                  >
+                                      <option value={PlayerStatus.UNSOLD}>UNSOLD</option>
+                                      <option value={PlayerStatus.PASSED}>PASSED</option>
+                                      <option value={PlayerStatus.SOLD}>SOLD</option>
+                                  </select>
+                              </div>
+
+                              <div>
+                                  <label className="block text-slate-400 text-xs mb-1">Team</label>
+                                  <select
+                                      className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500 appearance-none disabled:opacity-50"
+                                      value={manualTeamId}
+                                      onChange={e => setManualTeamId(e.target.value)}
+                                      disabled={playerStatusOverride !== PlayerStatus.SOLD}
+                                  >
+                                      <option value="">Select Team</option>
+                                      {teams.map(team => (
+                                          <option key={team.id} value={team.id}>{team.name}</option>
+                                      ))}
+                                  </select>
+                              </div>
+
+                              <div>
+                                  <label className="block text-slate-400 text-xs mb-1">Sold Price (L)</label>
+                                  <input
+                                      type="number"
+                                      min={0}
+                                      className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                                      value={manualSoldPrice}
+                                      onChange={e => setManualSoldPrice(parseInt(e.target.value || '0', 10))}
+                                      disabled={playerStatusOverride !== PlayerStatus.SOLD}
+                                  />
+                              </div>
+                          </div>
+                      </div>
+                  )}
 
                   {/* Image Upload / URL Section */}
                   <div>
@@ -844,21 +1099,166 @@ const Admin: React.FC = () => {
                                     <div className="text-xs text-slate-400">Set {player.set} • {player.role}</div>
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => startAuction(player.id)}
-                                disabled={!!currentPlayer}
-                                className="bg-red-600 hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2 rounded-full transition-opacity"
-                                title="Restart Auction"
-                            >
-                                <PlayCircle size={18} />
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleEditClick(player)}
+                                    className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-full transition-opacity"
+                                    title="Edit Player"
+                                >
+                                    <Pencil size={16} />
+                                </button>
+                                <button 
+                                    onClick={() => startAuction(player.id)}
+                                    disabled={!!currentPlayer}
+                                    className="bg-red-600 hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2 rounded-full transition-opacity"
+                                    title="Restart Auction"
+                                >
+                                    <PlayCircle size={18} />
+                                </button>
+                            </div>
                         </div>
                     ))
                 )}
             </div>
         </div>
 
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col h-[400px]">
+            <h3 className="text-white font-bold mb-4 flex items-center justify-between">
+                <span className="text-emerald-400">Rostered Players ({soldPlayers.length})</span>
+                <span className="text-xs text-slate-400">Manual team fixes</span>
+            </h3>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {soldPlayers.length === 0 ? (
+                    <div className="text-slate-500 text-center mt-12">No sold players yet.</div>
+                ) : (
+                    soldPlayers
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(player => {
+                            const team = teams.find(item => item.id === player.teamId);
+                            return (
+                                <div key={player.id} className="flex items-center justify-between p-3 bg-emerald-950/20 rounded-lg hover:bg-emerald-900/25 transition-colors border border-emerald-900/20 mb-2">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0">
+                                            {player.imageUrl ? <img src={player.imageUrl} alt={player.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={20} /></div>}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-white font-medium truncate">{player.name}</div>
+                                            <div className="text-xs text-slate-400 truncate">
+                                                {team?.name || 'No team'} • {formatCurrency(player.soldPrice || 0)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleEditClick(player)}
+                                        className="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-full transition-opacity"
+                                        title="Edit Player"
+                                    >
+                                        <Pencil size={16} />
+                                    </button>
+                                </div>
+                            );
+                        })
+                )}
+            </div>
+        </div>
+
       </div>
+
+      {editingTeamId && (
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center px-4">
+              <div className="w-full max-w-2xl bg-slate-900 border border-cyan-500/20 rounded-3xl p-6 shadow-2xl">
+                  <div className="flex items-center justify-between mb-6">
+                      <div>
+                          <h3 className="text-xl font-bold text-white">Edit Team</h3>
+                          <p className="text-sm text-slate-400">Update branding directly from the admin dashboard.</p>
+                      </div>
+                      <button type="button" onClick={closeTeamEditor} className="text-slate-400 hover:text-white">
+                          <X size={20} />
+                      </button>
+                  </div>
+
+                  <form onSubmit={handleSaveTeam} className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <label className="block text-slate-400 text-xs mb-1">Team Name</label>
+                              <input
+                                  type="text"
+                                  required
+                                  className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-cyan-500"
+                                  value={teamFormName}
+                                  onChange={e => setTeamFormName(e.target.value)}
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-slate-400 text-xs mb-1">Short Name</label>
+                              <input
+                                  type="text"
+                                  required
+                                  maxLength={6}
+                                  className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-cyan-500"
+                                  value={teamFormShortName}
+                                  onChange={e => setTeamFormShortName(e.target.value.toUpperCase())}
+                              />
+                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4 items-start">
+                          <div className="w-[140px] h-[140px] bg-slate-950 border-2 border-slate-700 border-dashed rounded-2xl overflow-hidden flex items-center justify-center relative group">
+                              {teamFormLogo ? (
+                                  <img src={teamFormLogo} alt={teamFormName} className="w-full h-full object-cover" />
+                              ) : (
+                                  <div className="text-white font-bold text-lg" style={{ color: teamFormColor || '#fff' }}>{teamFormShortName || 'LOGO'}</div>
+                              )}
+                              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity z-10">
+                                  {isUploadingTeamLogo ? <Loader2 size={24} className="text-white animate-spin" /> : <Upload size={24} className="text-white" />}
+                                  <input type="file" accept="image/*" className="hidden" onChange={handleTeamLogoUpload} disabled={isUploadingTeamLogo} />
+                              </label>
+                          </div>
+
+                          <div className="space-y-4">
+                              <div>
+                                  <label className="block text-slate-400 text-xs mb-1">Logo URL</label>
+                                  <input
+                                      type="text"
+                                      className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-cyan-500"
+                                      placeholder="Auto-fills on upload, or paste a public image URL"
+                                      value={teamFormLogo}
+                                      onChange={e => setTeamFormLogo(e.target.value)}
+                                  />
+                              </div>
+                              <div>
+                                  <label className="block text-slate-400 text-xs mb-1">Primary Color</label>
+                                  <div className="flex gap-3">
+                                      <input
+                                          type="color"
+                                          className="h-10 w-14 bg-slate-800 border border-slate-700 rounded"
+                                          value={teamFormColor || '#000000'}
+                                          onChange={e => setTeamFormColor(e.target.value)}
+                                      />
+                                      <input
+                                          type="text"
+                                          className="flex-1 bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-cyan-500"
+                                          value={teamFormColor}
+                                          onChange={e => setTeamFormColor(e.target.value)}
+                                      />
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="flex justify-end gap-3 pt-2">
+                          <button type="button" onClick={closeTeamEditor} className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500">
+                              Cancel
+                          </button>
+                          <button type="submit" className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium">
+                              Save Team
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 };
