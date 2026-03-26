@@ -47,6 +47,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
   const [teamOverrides, setTeamOverrides] = useState<TeamOverride[]>([]);
+  const [isBootstrapped, setIsBootstrapped] = useState(false);
   const [valuationMode, setValuationMode] = useState<AuctionValueMode>(() => {
     if (typeof window === 'undefined') return 'currency';
     const storedMode = window.localStorage.getItem(AUCTION_MODE_STORAGE_KEY);
@@ -89,9 +90,16 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // Initial Fetch & Realtime Subscription
   useEffect(() => {
-    fetchInitialData();
-    fetchTeamOverrides();
-    fetchAuctionSettings();
+    const bootstrap = async () => {
+      await Promise.all([
+        fetchInitialData(),
+        fetchTeamOverrides(),
+        fetchAuctionSettings()
+      ]);
+      setIsBootstrapped(true);
+    };
+
+    bootstrap();
 
     // Subscribe to Players changes
     const playerSub = supabase
@@ -555,7 +563,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       updateTeam,
       updateValuationMode
     }}>
-      {children}
+      {isBootstrapped ? children : null}
     </AuctionContext.Provider>
   );
 };
