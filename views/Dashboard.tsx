@@ -154,11 +154,6 @@ const Dashboard: React.FC = () => {
 
   const holdingTeam = teams.find(t => t.id === currentBidTeamId);
 
-  // Heuristic for Minimal Profile: If role is effectively absent AND stats are entirely 0.
-  const isMinimalProfile = currentPlayer && 
-      (!currentPlayer.role || currentPlayer.role === '-' || currentPlayer.role.toLowerCase() === 'n/a') && 
-      (!currentPlayer.stats || (currentPlayer.stats.matches === 0 && currentPlayer.stats.runs === 0 && currentPlayer.stats.wickets === 0));
-
   return (
     <div className="min-h-screen bg-slate-950 pt-20 pb-12 px-6">
       
@@ -189,133 +184,35 @@ const Dashboard: React.FC = () => {
             </div>
 
             {currentPlayer ? (
-                isMinimalProfile ? (
-                    /* ======== MINIMALIST VISUAL UI ======== */
-                    <div className="relative w-full h-full min-h-[600px] flex flex-col justify-end overflow-hidden bg-gradient-to-t from-slate-950 to-transparent z-10">
-                        
-                        {/* Huge Player Image (Cutout) */}
-                        {currentPlayer.imageUrl && (
-                            <div className="absolute inset-0 flex items-start justify-center z-0 pt-12 px-10 pb-[220px]">
-                                <img 
-                                    src={currentPlayer.imageUrl} 
-                                    alt={currentPlayer.name} 
-                                    className="w-full h-full object-contain object-bottom drop-shadow-[0_0_40px_rgba(0,0,0,0.6)]"
-                                />
-                            </div>
-                        )}
+                <div className="relative w-full h-full min-h-[600px] z-10 flex flex-col justify-end overflow-hidden">
+                    {currentPlayer.imageUrl ? (
+                        <div className="absolute inset-0 flex items-end justify-center z-0 px-6 pt-8">
+                            <img
+                                src={currentPlayer.imageUrl}
+                                alt={currentPlayer.name}
+                                className="w-full h-full object-contain object-bottom drop-shadow-[0_0_40px_rgba(0,0,0,0.75)]"
+                            />
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                            <Trophy size={320} />
+                        </div>
+                    )}
 
-                        {/* Gradient fade to ensure text at bottom is readable */}
-                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-10 pointer-events-none"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent z-10 pointer-events-none" />
 
-                        {/* Content at Bottom Center */}
-                        <div className="relative z-20 pb-8 pt-10 px-6 flex flex-col items-center text-center w-full">
-                            <h2 className="text-5xl md:text-6xl lg:text-[80px] text-white font-black display-font leading-none tracking-tight uppercase drop-shadow-2xl mb-6 transform -skew-x-6 mt-auto">
-                                {currentPlayer.name}
-                            </h2>
-
-                            {/* Bidding Info */}
-                            <div className="inline-flex flex-col items-center bg-black/60 backdrop-blur-xl px-12 py-6 rounded-3xl border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                                 {currentBid > 0 ? (
-                                     <>
-                                         <div className="text-yellow-400 font-bold text-5xl md:text-6xl display-font tracking-widest animate-pulse">
-                                             <span className="text-white drop-shadow-md">{formatAuctionValue(currentBid, valuationMode)}</span>
-                                         </div>
-                                         {holdingTeam && (
-                                             <div className="font-bold text-slate-300 mt-4 flex items-center gap-3">
-                                                 <span className="text-xs md:text-sm tracking-[0.2em] text-slate-400">HELD BY</span>
-                                                 <span style={{ color: holdingTeam.primaryColor }} className="text-xl md:text-2xl uppercase tracking-wider">{holdingTeam.name}</span>
-                                             </div>
-                                         )}
-                                     </>
-                                 ) : (
-                                     <div className="text-red-500 font-bold text-4xl md:text-5xl display-font tracking-wide">
-                                         BASE <span className="text-white ml-4">{formatAuctionValue(currentPlayer.basePrice, valuationMode)}</span>
-                                     </div>
-                                 )}
-                            </div>
+                    <div className="relative z-20 px-8 pb-10 pt-24 text-center flex flex-col items-center">
+                        <h2 className="text-5xl md:text-6xl lg:text-7xl text-white font-black display-font leading-none tracking-tight uppercase drop-shadow-2xl">
+                            {currentPlayer.name}
+                        </h2>
+                        <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/55 px-6 py-3 backdrop-blur-md">
+                            <Shield size={22} className="text-blue-300" />
+                            <span className="text-xl md:text-2xl font-bold uppercase tracking-[0.2em] text-blue-100">
+                                {currentPlayer.role || 'Player'}
+                            </span>
                         </div>
                     </div>
-                ) : (
-                    /* ======== STANDARD DETAILED UI ======== */
-                    <>
-                        {/* LEFT CONTENT (Text & Stats) */}
-                        <div className={`relative w-full ${currentPlayer.imageUrl ? 'md:w-[60%] text-left' : 'md:w-full text-center items-center'} h-full p-8 md:p-10 flex flex-col justify-between z-10 transition-all duration-300`}>
-                            
-                            {/* Header Info */}
-                            <div className={`space-y-4 ${!currentPlayer.imageUrl && 'flex flex-col items-center'}`}>
-                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-3xl filter drop-shadow-md">
-                                        {getCountryFlag(currentPlayer.country)}
-                                    </span>
-                                    <span className="text-white font-bold text-xl uppercase tracking-widest flex items-center gap-2">
-                                        {currentPlayer.country}
-                                    </span>
-                                 </div>
-
-                                 {/* Name Box */}
-                                 <div className="relative inline-block">
-                                     <div className="bg-gradient-to-r from-[#4cc9f0] to-[#4361ee] text-slate-950 text-5xl md:text-6xl lg:text-7xl font-black px-6 py-2 uppercase display-font transform -skew-x-6 shadow-lg shadow-blue-500/20 tracking-wide whitespace-nowrap">
-                                         {currentPlayer.name}
-                                     </div>
-                                 </div>
-                                 
-                                 {/* Role */}
-                                 <div className="flex items-center gap-3 mt-4 text-blue-100">
-                                     <Shield size={28} className="text-white fill-white/10" />
-                                     <span className="text-white font-bold text-2xl uppercase tracking-wider font-mono">{currentPlayer.role}</span>
-                                 </div>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="my-6 flex-grow w-full">
-                                <div className={`grid ${currentPlayer.imageUrl ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'} gap-x-8 gap-y-4 border-t-2 border-blue-500/30 pt-6`}>
-                                    {getStatsToDisplay(currentPlayer).map((stat, index) => (
-                                        <StatRow key={index} label={stat.label} value={stat.value} />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Footer / Base Price OR Current Bid */}
-                            <div className={`mt-auto ${!currentPlayer.imageUrl && 'w-full flex justify-center'}`}>
-                                {currentBid > 0 ? (
-                                    <div>
-                                        <div className="text-yellow-400 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide animate-pulse">
-                                            CURRENT BID : <span className="text-white">{formatAuctionValue(currentBid, valuationMode)}</span>
-                                        </div>
-                                        {holdingTeam && (
-                                            <div className="text-sm font-bold text-slate-400 mt-1 flex items-center gap-2">
-                                                HELD BY: <span style={{ color: holdingTeam.primaryColor }} className="text-lg uppercase tracking-wider">{holdingTeam.name}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-red-500 font-bold text-3xl md:text-4xl display-font drop-shadow-lg tracking-wide">
-                                        BASE PRICE : <span className="text-red-500">{formatAuctionValue(currentPlayer.basePrice, valuationMode)}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                        </div>
-
-                        {/* RIGHT CONTENT - IMAGE */}
-                        {currentPlayer.imageUrl && (
-                            <div className="relative md:absolute bottom-0 right-0 w-full md:w-[50%] h-[400px] md:h-[95%] z-0 flex items-end justify-center pointer-events-none overflow-hidden md:overflow-visible">
-                                 <img 
-                                    src={currentPlayer.imageUrl} 
-                                    alt={currentPlayer.name} 
-                                    className="h-full w-full object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]"
-                                 />
-                            </div>
-                        )}
-
-                        {/* No Image Fallback Background Decoration if URL is missing */}
-                        {!currentPlayer.imageUrl && (
-                            <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                                <Trophy size={400} />
-                            </div>
-                        )}
-                    </>
-                )
+                </div>
             ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-center p-12 relative z-10">
                     <div className="w-24 h-24 bg-blue-900/30 rounded-full flex items-center justify-center mb-6 animate-pulse border border-blue-500/30">
