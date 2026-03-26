@@ -186,11 +186,11 @@ const Dashboard: React.FC = () => {
             {currentPlayer ? (
                 <div className="relative w-full h-full min-h-[600px] z-10 overflow-hidden">
                     {currentPlayer.imageUrl ? (
-                        <div className="absolute inset-0 flex items-end justify-center z-0 px-8 pt-8 pb-40">
+                        <div className="absolute inset-0 flex items-end justify-center z-0 px-4 pt-6 pb-28 md:px-8 md:pb-24">
                             <img
                                 src={currentPlayer.imageUrl}
                                 alt={currentPlayer.name}
-                                className="w-full h-full object-contain object-bottom drop-shadow-[0_0_40px_rgba(0,0,0,0.75)]"
+                                className="w-full h-full max-w-[820px] object-contain object-bottom drop-shadow-[0_0_40px_rgba(0,0,0,0.75)] scale-[1.08] md:scale-[1.12]"
                             />
                         </div>
                     ) : (
@@ -199,30 +199,30 @@ const Dashboard: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-slate-950 via-slate-950/88 to-transparent z-10 pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-slate-950 via-slate-950/82 to-transparent z-10 pointer-events-none" />
 
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-6 md:p-8">
-                        <div className="mx-auto max-w-4xl rounded-[28px] border border-white/10 bg-slate-950/78 backdrop-blur-xl shadow-[0_20px_80px_rgba(2,6,23,0.55)]">
-                            <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-end md:p-8">
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-4 md:p-6">
+                        <div className="mx-auto max-w-5xl rounded-[28px] border border-white/10 bg-slate-950/68 backdrop-blur-xl shadow-[0_20px_80px_rgba(2,6,23,0.55)]">
+                            <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-6">
                                 <div className="min-w-0">
                                     <div className="text-[11px] uppercase tracking-[0.35em] text-blue-300/70">On The Block</div>
-                                    <h2 className="mt-3 text-4xl md:text-6xl text-white font-black display-font leading-none tracking-tight uppercase break-words">
+                                    <h2 className="mt-3 text-4xl md:text-5xl lg:text-6xl text-white font-black display-font leading-[0.95] tracking-tight uppercase break-words">
                                         {currentPlayer.name}
                                     </h2>
-                                    <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
-                                        <Shield size={20} className="text-blue-300" />
-                                        <span className="text-base md:text-xl font-bold uppercase tracking-[0.22em] text-blue-100">
+                                    <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5">
+                                        <Shield size={18} className="text-blue-300" />
+                                        <span className="text-sm md:text-lg font-bold uppercase tracking-[0.22em] text-blue-100">
                                             {currentPlayer.role || 'Player'}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col items-start md:items-end">
-                                    <div className="rounded-2xl border border-yellow-400/20 bg-black/40 px-5 py-4 md:px-6 text-left md:text-right min-w-[220px]">
+                                    <div className="rounded-2xl border border-yellow-400/20 bg-black/35 px-5 py-4 md:px-6 text-left md:text-right min-w-[210px]">
                                         <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
                                             {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
                                         </div>
-                                        <div className={`mt-2 text-4xl md:text-5xl font-black display-font ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
+                                        <div className={`mt-2 text-4xl md:text-[3.25rem] font-black display-font leading-none ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
                                             {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
                                         </div>
                                         {holdingTeam && currentBid > currentPlayer.basePrice ? (
