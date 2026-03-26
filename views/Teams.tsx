@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatCurrency } from '../constants';
+import { getPlayerDisplayName, getPlayerDisplayRole } from '../lib/playerDisplay';
 import { Users, IndianRupee, Shield, ChevronRight } from 'lucide-react';
 
 const Teams: React.FC = () => {
@@ -168,11 +169,11 @@ const Teams: React.FC = () => {
                                                         <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
                                                             {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : null}
                                                         </div>
-                                                        <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{player.name}</div>
+                                                        <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{getPlayerDisplayName(player)}</div>
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-slate-300">
-                                                    <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{player.role}</span>
+                                                    <span className="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700 uppercase font-bold tracking-wider">{getPlayerDisplayRole(player)}</span>
                                                 </td>
                                                 <td className="p-4 text-slate-400 font-medium">{player.country}</td>
                                                 <td className="p-4 text-right pr-6 font-mono text-green-400 font-bold text-base">{formatCurrency(player.soldPrice || 0)}</td>

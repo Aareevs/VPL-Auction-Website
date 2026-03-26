@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
 import { formatCurrency } from '../constants';
 import { supabase } from '../lib/supabaseClient';
+import { CAPTAIN_SUFFIX, isCaptain, getPlayerDisplayName, getPlayerDisplayRole } from '../lib/playerDisplay';
 import { PlusCircle, PlayCircle, Gavel, RefreshCw, Trophy, User, Layers, Pencil, X, Trash2, Shield, ShieldPlus, ShieldX, Mail, ArrowUp, ArrowDown, Save, Upload, Loader2 } from 'lucide-react';
 
 interface AdminEmail {
@@ -11,8 +12,6 @@ interface AdminEmail {
   email: string;
   added_at: string;
 }
-
-const CAPTAIN_SUFFIX = ' (C)';
 
 const stripCaptainSuffix = (name: string) =>
   name.endsWith(CAPTAIN_SUFFIX) ? name.slice(0, -CAPTAIN_SUFFIX.length) : name;
@@ -155,7 +154,7 @@ const Admin: React.FC = () => {
   const [newPlayerSet, setNewPlayerSet] = useState(0);
   const [playerStatusOverride, setPlayerStatusOverride] = useState<PlayerStatus>(PlayerStatus.UNSOLD);
   const [manualTeamId, setManualTeamId] = useState('');
-  const [manualSoldPrice, setManualSoldPrice] = useState(0);
+  const [manualSoldPrice, setManualSoldPrice] = useState('');
   const [makeCaptain, setMakeCaptain] = useState(false);
   const [manageSetsDialog, setManageSetsDialog] = useState(false);
   const [newSetName, setNewSetName] = useState('');
@@ -269,7 +268,7 @@ const Admin: React.FC = () => {
       setNewPlayerImage('');
       setPlayerStatusOverride(PlayerStatus.UNSOLD);
       setManualTeamId('');
-      setManualSoldPrice(0);
+      setManualSoldPrice('');
       setMakeCaptain(false);
       setStatsMatches(0);
       setStatsRuns(0);
@@ -295,8 +294,8 @@ const Admin: React.FC = () => {
       setNewPlayerImage(player.imageUrl || '');
       setPlayerStatusOverride(player.status);
       setManualTeamId(player.teamId || '');
-      setManualSoldPrice(player.soldPrice || 0);
-      setMakeCaptain(player.name.endsWith(CAPTAIN_SUFFIX));
+      setManualSoldPrice(player.soldPrice ? String(player.soldPrice) : '');
+      setMakeCaptain(isCaptain(player));
       
       setStatsAge(player.stats.age || 0);
       setStatsMatches(player.stats.matches);
@@ -351,11 +350,11 @@ const Admin: React.FC = () => {
         return;
       }
 
-      if (!manualSoldPrice || manualSoldPrice <= 0) {
-        alert('Enter a valid sold price before saving a sold player.');
-        return;
-      }
     }
+
+    const resolvedSoldPrice = playerStatusOverride === PlayerStatus.SOLD
+      ? Math.max(parseInt(manualSoldPrice || String(newPlayerPrice), 10) || newPlayerPrice, 0)
+      : 0;
     
     const playerData: Player = {
       id: editingPlayerId || Date.now().toString(),
@@ -366,7 +365,7 @@ const Admin: React.FC = () => {
       status: playerStatusOverride,
       set: newPlayerSet,
       imageUrl: newPlayerImage,
-      soldPrice: playerStatusOverride === PlayerStatus.SOLD ? manualSoldPrice : 0,
+      soldPrice: resolvedSoldPrice,
       teamId: playerStatusOverride === PlayerStatus.SOLD ? manualTeamId : undefined,
       stats: {
           age: statsAge,
@@ -798,8 +797,9 @@ const Admin: React.FC = () => {
                                       min={0}
                                       className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500 disabled:opacity-50"
                                       value={manualSoldPrice}
-                                      onChange={e => setManualSoldPrice(parseInt(e.target.value || '0', 10))}
+                                      onChange={e => setManualSoldPrice(e.target.value)}
                                       disabled={playerStatusOverride !== PlayerStatus.SOLD}
+                                      placeholder={`Defaults to base price (${newPlayerPrice})`}
                                   />
                               </div>
                           </div>
@@ -1036,8 +1036,8 @@ const Admin: React.FC = () => {
                                             )}
                                         </div>
                                         <div>
-                                            <div className="text-white font-medium">{player.name}</div>
-                                            <div className="text-xs text-slate-400">{player.role} • {formatCurrency(player.basePrice)}</div>
+                                            <div className="text-white font-medium">{getPlayerDisplayName(player)}</div>
+                                            <div className="text-xs text-slate-400">{getPlayerDisplayRole(player)} • {formatCurrency(player.basePrice)}</div>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -1095,8 +1095,8 @@ const Admin: React.FC = () => {
                                     {player.imageUrl ? <img src={player.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={20} /></div>}
                                 </div>
                                 <div>
-                                    <div className="text-white font-medium">{player.name}</div>
-                                    <div className="text-xs text-slate-400">Set {player.set} • {player.role}</div>
+                                    <div className="text-white font-medium">{getPlayerDisplayName(player)}</div>
+                                    <div className="text-xs text-slate-400">Set {player.set} • {getPlayerDisplayRole(player)}</div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -1143,7 +1143,7 @@ const Admin: React.FC = () => {
                                             {player.imageUrl ? <img src={player.imageUrl} alt={player.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500"><User size={20} /></div>}
                                         </div>
                                         <div className="min-w-0">
-                                            <div className="text-white font-medium truncate">{player.name}</div>
+                                            <div className="text-white font-medium truncate">{getPlayerDisplayName(player)}</div>
                                             <div className="text-xs text-slate-400 truncate">
                                                 {team?.name || 'No team'} • {formatCurrency(player.soldPrice || 0)}
                                             </div>
