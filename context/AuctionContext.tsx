@@ -164,11 +164,25 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       })
       .subscribe();
 
+    const auctionSettingsSub = supabase
+      .channel('public:auction_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_settings' }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const mode = payload.new.valuation_mode === 'points' ? 'points' : 'currency';
+          setValuationMode(mode);
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+          }
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(playerSub);
       supabase.removeChannel(setsSub);
       supabase.removeChannel(auctionSub);
       supabase.removeChannel(teamOverrideSub);
+      supabase.removeChannel(auctionSettingsSub);
     };
   }, []);
 
