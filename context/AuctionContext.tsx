@@ -26,6 +26,7 @@ interface AuctionContextType {
   teams: Team[];
   players: Player[];
   valuationMode: AuctionValueMode;
+  captainSpotlightEnabled: boolean;
   currentPlayer: Player | null;
   currentBid: number;
   currentBidTeamId: string | null;
@@ -48,10 +49,12 @@ interface AuctionContextType {
   createTeam: (team: {name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => Promise<void>;
   deleteTeam: (teamId: string) => Promise<void>;
   updateValuationMode: (mode: AuctionValueMode) => Promise<void>;
+  updateCaptainSpotlightEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const AuctionContext = createContext<AuctionContextType | undefined>(undefined);
 const AUCTION_MODE_STORAGE_KEY = 'vpl-auction-mode';
+const CAPTAIN_SPOTLIGHT_STORAGE_KEY = 'vpl-captain-spotlight';
 
 export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sets, setSets] = useState<AuctionSet[]>([]);
@@ -76,6 +79,10 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (typeof window === 'undefined') return 'currency';
     const storedMode = window.localStorage.getItem(AUCTION_MODE_STORAGE_KEY);
     return storedMode === 'points' ? 'points' : 'currency';
+  });
+  const [captainSpotlightEnabled, setCaptainSpotlightEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(CAPTAIN_SPOTLIGHT_STORAGE_KEY) === 'true';
   });
 
   // Derived State
@@ -213,8 +220,11 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
           const mode = payload.new.valuation_mode === 'points' ? 'points' : 'currency';
           setValuationMode(mode);
+          const spotlightEnabled = !!payload.new.captain_spotlight_enabled;
+          setCaptainSpotlightEnabled(spotlightEnabled);
           if (typeof window !== 'undefined') {
             window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+            window.localStorage.setItem(CAPTAIN_SPOTLIGHT_STORAGE_KEY, String(spotlightEnabled));
           }
         }
       })
@@ -564,15 +574,23 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const fetchAuctionSettings = async () => {
       const { data, error } = await supabase
           .from('auction_settings')
-          .select('valuation_mode')
+          .select('valuation_mode, captain_spotlight_enabled')
           .eq('id', 1)
           .maybeSingle();
 
-      if (!error && data?.valuation_mode) {
-          const mode = data.valuation_mode === 'points' ? 'points' : 'currency';
-          setValuationMode(mode);
+      if (!error && data) {
+          if (data.valuation_mode) {
+              const mode = data.valuation_mode === 'points' ? 'points' : 'currency';
+              setValuationMode(mode);
+              if (typeof window !== 'undefined') {
+                  window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+              }
+          }
+
+          const spotlightEnabled = !!data.captain_spotlight_enabled;
+          setCaptainSpotlightEnabled(spotlightEnabled);
           if (typeof window !== 'undefined') {
-              window.localStorage.setItem(AUCTION_MODE_STORAGE_KEY, mode);
+              window.localStorage.setItem(CAPTAIN_SPOTLIGHT_STORAGE_KEY, String(spotlightEnabled));
           }
       }
   };
@@ -591,6 +609,23 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       if (error) {
           console.warn('Failed to persist auction mode, using local storage fallback:', error.message);
+      }
+  };
+
+  const updateCaptainSpotlightEnabled = async (enabled: boolean) => {
+      setCaptainSpotlightEnabled(enabled);
+      if (typeof window !== 'undefined') {
+          window.localStorage.setItem(CAPTAIN_SPOTLIGHT_STORAGE_KEY, String(enabled));
+      }
+
+      const { error } = await supabase.from('auction_settings').upsert({
+          id: 1,
+          captain_spotlight_enabled: enabled,
+          updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+          console.warn('Failed to persist captain spotlight setting, using local storage fallback:', error.message);
       }
   };
 
@@ -667,6 +702,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       teams,
       players,
       valuationMode,
+      captainSpotlightEnabled,
       currentPlayer,
       currentBid,
       currentBidTeamId,
@@ -686,7 +722,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       updateTeam,
       createTeam,
       deleteTeam,
-      updateValuationMode
+      updateValuationMode,
+      updateCaptainSpotlightEnabled
     }}>
       {isBootstrapped ? children : null}
     </AuctionContext.Provider>

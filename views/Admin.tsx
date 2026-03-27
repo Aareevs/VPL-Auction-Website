@@ -44,7 +44,9 @@ const Admin: React.FC = () => {
     createTeam,
     deleteTeam,
     valuationMode,
-    updateValuationMode
+    updateValuationMode,
+    captainSpotlightEnabled,
+    updateCaptainSpotlightEnabled
   } = useAuction();
 
   const { user } = useAuth();
@@ -585,6 +587,22 @@ const Admin: React.FC = () => {
                           Points
                       </button>
                   </div>
+              </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between gap-4">
+                  <div>
+                      <h3 className="text-white font-bold">Captain Spotlight</h3>
+                      <p className="text-xs text-slate-500 mt-1">Show the team captain card on the Teams & Squads header.</p>
+                  </div>
+                  <button
+                      type="button"
+                      onClick={() => updateCaptainSpotlightEnabled(!captainSpotlightEnabled)}
+                      className={`relative w-14 h-8 rounded-full transition-colors ${captainSpotlightEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                  >
+                      <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${captainSpotlightEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </button>
               </div>
           </div>
 

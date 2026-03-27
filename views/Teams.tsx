@@ -5,7 +5,7 @@ import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, 
 import { Users, IndianRupee, Shield, ChevronRight } from 'lucide-react';
 
 const Teams: React.FC = () => {
-  const { teams, valuationMode } = useAuction();
+  const { teams, valuationMode, captainSpotlightEnabled } = useAuction();
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || '');
 
   useEffect(() => {
@@ -15,6 +15,7 @@ const Teams: React.FC = () => {
   }, [teams, selectedTeamId]);
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  const captain = selectedTeam?.squad.find(player => isCaptain(player));
   const showRoleColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerDisplayRole(player)) : false;
   const showAcquisitionColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerAcquisitionLabel(player, valuationMode)) : false;
 
@@ -92,7 +93,7 @@ const Teams: React.FC = () => {
                 <div className="space-y-8 animate-fade-in">
                     
                     {/* Header Banner */}
-                    <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 p-8 flex items-center justify-between">
+                    <div className="relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 p-8 flex items-center justify-between gap-8">
                          <div className="absolute inset-0 opacity-10" style={{ background: `linear-gradient(to right, ${selectedTeam.primaryColor}, transparent)` }}></div>
                          <div className="relative z-10 flex items-center gap-6">
                              <div className="w-24 h-24 rounded-2xl bg-slate-800 border-4 border-slate-700 shadow-2xl overflow-hidden">
@@ -111,6 +112,26 @@ const Teams: React.FC = () => {
                                  </div>
                              </div>
                          </div>
+                         {captainSpotlightEnabled && captain && (
+                             <div className="relative z-10 hidden lg:flex items-center gap-4 rounded-2xl border border-amber-400/20 bg-slate-950/55 px-5 py-4 min-w-[320px]">
+                                 <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-700 bg-slate-800 flex-shrink-0">
+                                     {captain.imageUrl ? (
+                                         <img src={captain.imageUrl} alt={captain.name} className="w-full h-full object-cover" />
+                                     ) : (
+                                         <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold">CAP</div>
+                                     )}
+                                 </div>
+                                 <div className="min-w-0">
+                                     <div className="text-[11px] uppercase tracking-[0.3em] text-amber-300/70">Captain</div>
+                                     <div className="mt-2 text-white text-2xl font-black display-font leading-none break-words">
+                                         {getPlayerDisplayName(captain)}
+                                     </div>
+                                     <div className="mt-2 text-sm text-slate-400 uppercase tracking-[0.2em]">
+                                         {captain.role || 'Player'}
+                                     </div>
+                                 </div>
+                             </div>
+                         )}
                     </div>
 
                     {/* Team Header Stats */}
