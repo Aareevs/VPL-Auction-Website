@@ -33,7 +33,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
                <div>
                    <h2 className="text-3xl font-bold text-white display-font mb-1">{team.name}</h2>
                    <div className="flex items-center gap-4 text-sm font-bold">
-                       <span className={`flex items-center gap-1.5 ${team.squad.length >= 7 ? 'text-red-400' : 'text-slate-400'}`}><Users size={14} /> {team.squad.length} / 7 Players</span>
+                       <span className={`flex items-center gap-1.5 ${team.squad.length >= 8 ? 'text-red-400' : 'text-slate-400'}`}><Users size={14} /> {team.squad.length} / 8 Players</span>
                        <span className="text-green-400 flex items-center gap-1.5"><DollarSign size={14} /> {formatAuctionValue(team.remainingPurse, valuationMode)} Left</span>
                    </div>
                </div>
@@ -90,7 +90,7 @@ const TeamDetailModal: React.FC<TeamDetailModalProps> = ({ team, onClose }) => {
         {/* Footer Stats */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/30 flex justify-between text-xs text-slate-500 font-mono uppercase tracking-widest">
             <span>Total Spent: {formatAuctionValue(team.totalPurse - team.remainingPurse, valuationMode)}</span>
-            <span className={team.squad.length >= 7 ? 'text-red-500 font-bold' : ''}>Squad Limit: {team.squad.length}/7</span>
+            <span className={team.squad.length >= 8 ? 'text-red-500 font-bold' : ''}>Squad Limit: {team.squad.length}/8</span>
         </div>
       </div>
     </div>
