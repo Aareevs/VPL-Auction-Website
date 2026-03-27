@@ -41,6 +41,8 @@ const Admin: React.FC = () => {
     updatePlayerSet,
     reorderSets,
     updateTeam,
+    createTeam,
+    deleteTeam,
     valuationMode,
     updateValuationMode
   } = useAuction();
@@ -198,6 +200,7 @@ const Admin: React.FC = () => {
   const [customBidAmount, setCustomBidAmount] = useState<string>('');
 
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [teamFormName, setTeamFormName] = useState('');
   const [teamFormShortName, setTeamFormShortName] = useState('');
   const [teamFormLogo, setTeamFormLogo] = useState('');
@@ -314,6 +317,7 @@ const Admin: React.FC = () => {
       const team = teams.find((item) => item.id === teamId);
       if (!team) return;
 
+      setTeamModalOpen(true);
       setEditingTeamId(team.id);
       setTeamFormName(team.name);
       setTeamFormShortName(team.shortName);
@@ -321,7 +325,17 @@ const Admin: React.FC = () => {
       setTeamFormColor(team.primaryColor);
   };
 
+  const openCreateTeam = () => {
+      setTeamModalOpen(true);
+      setEditingTeamId(null);
+      setTeamFormName('');
+      setTeamFormShortName('');
+      setTeamFormLogo('');
+      setTeamFormColor('#2563eb');
+  };
+
   const closeTeamEditor = () => {
+      setTeamModalOpen(false);
       setEditingTeamId(null);
       setTeamFormName('');
       setTeamFormShortName('');
@@ -331,15 +345,32 @@ const Admin: React.FC = () => {
 
   const handleSaveTeam = async (e: React.FormEvent) => {
       e.preventDefault();
+
+      if (editingTeamId) {
+          await updateTeam(editingTeamId, {
+              name: teamFormName.trim(),
+              shortName: teamFormShortName.trim().toUpperCase(),
+              logoUrl: teamFormLogo.trim(),
+              primaryColor: teamFormColor
+          });
+      } else {
+          await createTeam({
+              name: teamFormName.trim(),
+              shortName: teamFormShortName.trim().toUpperCase(),
+              logoUrl: teamFormLogo.trim(),
+              primaryColor: teamFormColor
+          });
+      }
+
+      closeTeamEditor();
+  };
+
+  const handleDeleteTeam = async () => {
       if (!editingTeamId) return;
-
-      await updateTeam(editingTeamId, {
-          name: teamFormName.trim(),
-          shortName: teamFormShortName.trim().toUpperCase(),
-          logoUrl: teamFormLogo.trim(),
-          primaryColor: teamFormColor
-      });
-
+      const team = teams.find(item => item.id === editingTeamId);
+      if (!team) return;
+      if (!confirm(`Delete ${team.name}? This only works for teams with no assigned players.`)) return;
+      await deleteTeam(editingTeamId);
       closeTeamEditor();
   };
 
@@ -563,7 +594,16 @@ const Admin: React.FC = () => {
                       <Shield size={18} className="text-cyan-400" />
                       Team Management
                   </h3>
-                  <span className="text-xs text-slate-500">Click a team to edit name or logo</span>
+                  <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-500">Click a team to edit name or logo</span>
+                      <button
+                          type="button"
+                          onClick={openCreateTeam}
+                          className="text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 px-3 py-1.5 rounded-full"
+                      >
+                          Add Team
+                      </button>
+                  </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {teams.map(team => (
@@ -1209,13 +1249,13 @@ const Admin: React.FC = () => {
 
       </div>
 
-      {editingTeamId && (
+      {teamModalOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center px-4">
               <div className="w-full max-w-2xl bg-slate-900 border border-cyan-500/20 rounded-3xl p-6 shadow-2xl">
                   <div className="flex items-center justify-between mb-6">
                       <div>
-                          <h3 className="text-xl font-bold text-white">Edit Team</h3>
-                          <p className="text-sm text-slate-400">Update branding directly from the admin dashboard.</p>
+                          <h3 className="text-xl font-bold text-white">{editingTeamId ? 'Edit Team' : 'Create Team'}</h3>
+                          <p className="text-sm text-slate-400">{editingTeamId ? 'Update branding directly from the admin dashboard.' : 'Add a new team to the auction pool.'}</p>
                       </div>
                       <button type="button" onClick={closeTeamEditor} className="text-slate-400 hover:text-white">
                           <X size={20} />
@@ -1292,11 +1332,16 @@ const Admin: React.FC = () => {
                       </div>
 
                       <div className="flex justify-end gap-3 pt-2">
+                          {editingTeamId && (
+                              <button type="button" onClick={handleDeleteTeam} className="px-4 py-2 rounded-lg bg-red-950/60 border border-red-500/20 text-red-300 hover:text-white hover:bg-red-900/70">
+                                  Delete Team
+                              </button>
+                          )}
                           <button type="button" onClick={closeTeamEditor} className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500">
                               Cancel
                           </button>
                           <button type="submit" className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium">
-                              Save Team
+                              {editingTeamId ? 'Save Team' : 'Create Team'}
                           </button>
                       </div>
                   </form>

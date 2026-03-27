@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuction } from '../context/AuctionContext';
 import { formatAuctionValue } from '../constants';
 import { getPlayerAcquisitionLabel, getPlayerDisplayName, getPlayerDisplayRole, isCaptain } from '../lib/playerDisplay';
@@ -7,6 +7,12 @@ import { Users, IndianRupee, Shield, ChevronRight } from 'lucide-react';
 const Teams: React.FC = () => {
   const { teams, valuationMode } = useAuction();
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams[0]?.id || '');
+
+  useEffect(() => {
+    if (!teams.find(team => team.id === selectedTeamId)) {
+      setSelectedTeamId(teams[0]?.id || '');
+    }
+  }, [teams, selectedTeamId]);
 
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
   const showRoleColumn = selectedTeam ? selectedTeam.squad.some(player => !!getPlayerDisplayRole(player)) : false;

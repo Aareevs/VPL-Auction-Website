@@ -12,6 +12,16 @@ interface TeamOverride {
   primary_color?: string;
 }
 
+interface TeamRecord {
+  id: string;
+  name: string;
+  shortName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl?: string;
+  displayOrder: number;
+}
+
 interface AuctionContextType {
   teams: Team[];
   players: Player[];
@@ -35,6 +45,8 @@ interface AuctionContextType {
   resetAuction: () => void;
   deletePlayer: (playerId: string) => void;
   updateTeam: (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => Promise<void>;
+  createTeam: (team: {name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
   updateValuationMode: (mode: AuctionValueMode) => Promise<void>;
 }
 
@@ -47,6 +59,18 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [auctionState, setAuctionState] = useState<any>(null);
   const [bidHistory, setBidHistory] = useState<Bid[]>([]);
   const [teamOverrides, setTeamOverrides] = useState<TeamOverride[]>([]);
+  const [teamRecords, setTeamRecords] = useState<TeamRecord[]>(() =>
+    INITIAL_TEAMS.map((team, index) => ({
+      id: team.id,
+      name: team.name,
+      shortName: team.shortName,
+      primaryColor: team.primaryColor,
+      secondaryColor: team.secondaryColor,
+      logoUrl: team.logoUrl,
+      displayOrder: index
+    }))
+  );
+  const [usesAuctionTeamsTable, setUsesAuctionTeamsTable] = useState(false);
   const [isBootstrapped, setIsBootstrapped] = useState(false);
   const [valuationMode, setValuationMode] = useState<AuctionValueMode>(() => {
     if (typeof window === 'undefined') return 'currency';
@@ -57,8 +81,22 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Derived State
   const teams = useMemo(() => {
     const teamBudget = getAuctionBudget(valuationMode);
-    return INITIAL_TEAMS.map(team => {
-      const override = teamOverrides.find(o => o.team_id === team.id);
+    const sourceTeams: TeamRecord[] = usesAuctionTeamsTable
+      ? teamRecords
+      : INITIAL_TEAMS.map((team, index) => {
+          const override = teamOverrides.find(o => o.team_id === team.id);
+          return {
+            id: team.id,
+            name: override?.name || team.name,
+            shortName: override?.short_name || team.shortName,
+            primaryColor: override?.primary_color || team.primaryColor,
+            secondaryColor: team.secondaryColor,
+            logoUrl: override?.logo_url || team.logoUrl,
+            displayOrder: index
+          };
+        });
+
+    return sourceTeams.map(team => {
       const teamPlayers = players
         .filter(p => p.teamId === team.id)
         .sort((a, b) => {
@@ -69,16 +107,12 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       const spent = teamPlayers.reduce((sum, p) => sum + (p.soldPrice || 0), 0);
       return {
         ...team,
-        name: override?.name || team.name,
-        shortName: override?.short_name || team.shortName,
-        logoUrl: override?.logo_url || team.logoUrl,
-        primaryColor: override?.primary_color || team.primaryColor,
         totalPurse: teamBudget,
         remainingPurse: teamBudget - spent,
         squad: teamPlayers
       };
     });
-  }, [players, teamOverrides, valuationMode]);
+  }, [players, teamOverrides, teamRecords, usesAuctionTeamsTable, valuationMode]);
 
   const currentPlayer = useMemo(() => {
     if (!auctionState?.current_player_id) return null;
@@ -93,6 +127,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const bootstrap = async () => {
       await Promise.all([
         fetchInitialData(),
+        fetchAuctionTeams(),
         fetchTeamOverrides(),
         fetchAuctionSettings()
       ]);
@@ -185,12 +220,27 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       })
       .subscribe();
 
+    const auctionTeamsSub = supabase
+      .channel('public:auction_teams')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_teams' }, (payload) => {
+        setUsesAuctionTeamsTable(true);
+        if (payload.eventType === 'INSERT') {
+          setTeamRecords(prev => [...prev, transformTeamFromDB(payload.new)].sort((a, b) => a.displayOrder - b.displayOrder));
+        } else if (payload.eventType === 'UPDATE') {
+          setTeamRecords(prev => prev.map(team => team.id === payload.new.id ? transformTeamFromDB(payload.new) : team).sort((a, b) => a.displayOrder - b.displayOrder));
+        } else if (payload.eventType === 'DELETE') {
+          setTeamRecords(prev => prev.filter(team => team.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(playerSub);
       supabase.removeChannel(setsSub);
       supabase.removeChannel(auctionSub);
       supabase.removeChannel(teamOverrideSub);
       supabase.removeChannel(auctionSettingsSub);
+      supabase.removeChannel(auctionTeamsSub);
     };
   }, []);
 
@@ -249,6 +299,16 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       updatedAt: p.updated_at,
       displayOrder: p.display_order,
       // stats already jsonb so matches object
+  });
+
+  const transformTeamFromDB = (team: any): TeamRecord => ({
+      id: team.id,
+      name: team.name,
+      shortName: team.short_name,
+      primaryColor: team.primary_color,
+      secondaryColor: team.secondary_color,
+      logoUrl: team.logo_url,
+      displayOrder: team.display_order || 0
   });
 
   // Actions
@@ -489,6 +549,18 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (!error && data) setTeamOverrides(data as TeamOverride[]);
   };
 
+  const fetchAuctionTeams = async () => {
+      const { data, error } = await supabase
+          .from('auction_teams')
+          .select('*')
+          .order('display_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+          setTeamRecords(data.map(transformTeamFromDB));
+          setUsesAuctionTeamsTable(true);
+      }
+  };
+
   const fetchAuctionSettings = async () => {
       const { data, error } = await supabase
           .from('auction_settings')
@@ -522,7 +594,58 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
   };
 
+  const createTeam = async (team: {name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => {
+      const { error } = await supabase.from('auction_teams').insert({
+          id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `team-${Date.now()}`,
+          name: team.name,
+          short_name: team.shortName,
+          primary_color: team.primaryColor,
+          secondary_color: team.secondaryColor || '#ffffff',
+          logo_url: team.logoUrl || null,
+          display_order: teamRecords.length
+      });
+
+      if (error) {
+          alert('Error creating team: ' + error.message);
+      } else {
+          setUsesAuctionTeamsTable(true);
+      }
+  };
+
+  const deleteTeam = async (teamId: string) => {
+      if (players.some(player => player.teamId === teamId)) {
+          alert('Remove players from this team before deleting it.');
+          return;
+      }
+
+      if (currentBidTeamId === teamId) {
+          alert('Cannot delete a team while it is the current bidder.');
+          return;
+      }
+
+      const { error } = await supabase.from('auction_teams').delete().eq('id', teamId);
+
+      if (error) {
+          alert('Error deleting team: ' + error.message);
+      }
+  };
+
   const updateTeam = async (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => {
+      if (usesAuctionTeamsTable) {
+          const dbUpdates: any = { updated_at: new Date().toISOString() };
+          if (updates.name !== undefined) dbUpdates.name = updates.name;
+          if (updates.shortName !== undefined) dbUpdates.short_name = updates.shortName;
+          if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl;
+          if (updates.primaryColor !== undefined) dbUpdates.primary_color = updates.primaryColor;
+
+          const { error } = await supabase.from('auction_teams').update(dbUpdates).eq('id', teamId);
+
+          if (error) {
+              alert('Error updating team: ' + error.message);
+          }
+          return;
+      }
+
       const dbUpdates: any = { updated_at: new Date().toISOString() };
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.shortName !== undefined) dbUpdates.short_name = updates.shortName;
@@ -561,6 +684,8 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       resetAuction,
       deletePlayer,
       updateTeam,
+      createTeam,
+      deleteTeam,
       updateValuationMode
     }}>
       {isBootstrapped ? children : null}
