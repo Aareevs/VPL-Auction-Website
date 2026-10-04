@@ -5,86 +5,88 @@ import { useAuth } from '../context/AuthProvider';
 
 const PLAYER_IMAGES = [
   "https://images.news18.com/ibnlive/uploads/2025/02/virat-kohli-shot-AP-1-2025-02-9e28043ad4ef3e00a00b1a2093fa13c9-4x3.jpg",
-  "https://www.royalstagfan.com/wp-content/themes/royalstagnew/rsassets/images/blog/images/j3.jpg",
   "https://i.pinimg.com/originals/bb/72/2a/bb722a1111f63463d651786ecb761a08.jpg",
   "https://mxp-media.ilnmedia.com/media/content/2021/Sep/Ravi-Shastri-Praises-MS-Dhonis-Wicket-Keeping-But-Some-People-Dont-Like-His-Comparison-1200x900_613347cb1b464.jpeg",
-  
-  // New Additions
   "https://img.ipl.com/upload/20250918/fd887a9e65815c4730d7c9fdfdba9662.webp",
   "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/RXVCL2CU4NP5LKKRLU6XDWYCZA.jpg",
-  "https://commercebuild-175c7.kxcdn.com/cdn-d03d5231-5b2e278c.commercebuild.com/cf738e9579802e6b988bb225ca6bc00c/contents/ckfinder/images/Random-Images/Jos-Buttler-Profile-26-5.jpg?quality=65",
   "https://akm-img-a-in.tosshub.com/indiatoday/images/story/202310/travis-head-becomes-5th-australia-batter-to-score-world-cup-hundred-on-debut-courtesy-ap-284825383-3x4_0.jpg?VersionId=X6ICl9jE4_nIxRXoc3x7EqLLjGnWjVM2",
-  "https://www.punjabnewsexpress.com/images/article/article228069.jpg",
   "https://cf-img-a-in.tosshub.com/sites/visualstory/stories/2023_04/story_32974/assets/2.jpeg?time=1682335725",
   "https://batsballsandbrakingzones.wordpress.com/wp-content/uploads/2019/03/kumar-sangakkara-of-sri-lanka-during-the-icc-world-twenty20-bangladesh-2014-final-between-i.jpg",
   "https://cdn.shopify.com/s/files/1/0278/4565/6649/files/WhatsApp_Image_2024-05-31_at_01.20.04.webp?v=1717098851"
 ];
 
-const SlidingBackground = () => {
-    // Duplicate images for seamless loop
-    const displayImages = [...PLAYER_IMAGES, ...PLAYER_IMAGES];
-    
-    // Split images into 3 columns for variety
-    const col1 = [...displayImages].sort(() => Math.random() - 0.5);
-    const col2 = [...displayImages].sort(() => Math.random() - 0.5);
-    const col3 = [...displayImages].sort(() => Math.random() - 0.5);
+// Pre-computed static columns (defined outside so typing in inputs never reshuffles or restarts animations)
+const BG_COL1 = [PLAYER_IMAGES[0], PLAYER_IMAGES[1], PLAYER_IMAGES[2], PLAYER_IMAGES[3], PLAYER_IMAGES[4], PLAYER_IMAGES[0], PLAYER_IMAGES[1], PLAYER_IMAGES[2], PLAYER_IMAGES[3], PLAYER_IMAGES[4]];
+const BG_COL2 = [PLAYER_IMAGES[5], PLAYER_IMAGES[6], PLAYER_IMAGES[7], PLAYER_IMAGES[8], PLAYER_IMAGES[0], PLAYER_IMAGES[5], PLAYER_IMAGES[6], PLAYER_IMAGES[7], PLAYER_IMAGES[8], PLAYER_IMAGES[0]];
+const BG_COL3 = [PLAYER_IMAGES[1], PLAYER_IMAGES[3], PLAYER_IMAGES[5], PLAYER_IMAGES[7], PLAYER_IMAGES[2], PLAYER_IMAGES[1], PLAYER_IMAGES[3], PLAYER_IMAGES[5], PLAYER_IMAGES[7], PLAYER_IMAGES[2]];
+const BG_COL4 = [PLAYER_IMAGES[8], PLAYER_IMAGES[6], PLAYER_IMAGES[4], PLAYER_IMAGES[2], PLAYER_IMAGES[0], PLAYER_IMAGES[8], PLAYER_IMAGES[6], PLAYER_IMAGES[4], PLAYER_IMAGES[2], PLAYER_IMAGES[0]];
 
+const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const el = e.target as HTMLElement;
+    el.style.display = 'none';
+    if (el.parentElement) {
+        el.parentElement.style.display = 'none';
+    }
+};
+
+const renderCard = (src: string, key: string) => (
+    <div 
+        key={key} 
+        className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-slate-800 border border-slate-700/50 opacity-60"
+    >
+        <img 
+            src={src} 
+            alt="Cricket player" 
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover grayscale" 
+            onError={handleImgError}
+        />
+    </div>
+);
+
+const SlidingBackground = React.memo(() => {
     return (
-        <div className="absolute inset-0 overflow-hidden z-0 bg-slate-950 flex items-center justify-center">
+        <div className="absolute inset-0 overflow-hidden z-0 bg-slate-950 flex items-center justify-center pointer-events-none select-none">
             {/* Overlay to dim images slightly so login form is readable */}
-            <div className="absolute inset-0 bg-slate-950/80 z-20 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-slate-950/75 z-10 pointer-events-none"></div>
             
             {/* Slanted Container */}
-            <div className="relative w-[150vw] h-[150vh] flex gap-8 transform -rotate-12 scale-110">
+            <div className="relative w-[150vw] h-[150vh] flex gap-8 transform -rotate-12 scale-110 z-0">
                 
                 {/* Column 1 - Moves Up */}
                 <div className="flex-1 min-w-[300px]">
                     <div className="flex flex-col gap-8 animate-marquee-up">
-                        {col1.map((src, i) => (
-                            <div key={`c1-${i}`} className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl opacity-60">
-                                <img src={src} alt="" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
-                            </div>
-                        ))}
+                        {BG_COL1.map((src, i) => renderCard(src, `c1-${i}`))}
                     </div>
                 </div>
 
                 {/* Column 2 - Moves Down (Slower) */}
                 <div className="flex-1 min-w-[300px] mt-[-200px]">
                     <div className="flex flex-col gap-8 animate-marquee-down" style={{ animationDuration: '55s' }}>
-                        {col2.map((src, i) => (
-                            <div key={`c2-${i}`} className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl opacity-60">
-                                <img src={src} alt="" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
-                            </div>
-                        ))}
+                        {BG_COL2.map((src, i) => renderCard(src, `c2-${i}`))}
                     </div>
                 </div>
 
                 {/* Column 3 - Moves Up */}
                 <div className="flex-1 min-w-[300px]">
                     <div className="flex flex-col gap-8 animate-marquee-up" style={{ animationDuration: '45s' }}>
-                        {col3.map((src, i) => (
-                            <div key={`c3-${i}`} className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl opacity-60">
-                                <img src={src} alt="" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
-                            </div>
-                        ))}
+                        {BG_COL3.map((src, i) => renderCard(src, `c3-${i}`))}
                     </div>
                 </div>
 
-                 {/* Column 4 - Moves Down (Extra coverage) */}
-                 <div className="flex-1 min-w-[300px] mt-[-100px] hidden md:block">
+                {/* Column 4 - Moves Down (Extra coverage) */}
+                <div className="flex-1 min-w-[300px] mt-[-100px] hidden md:block">
                     <div className="flex flex-col gap-8 animate-marquee-down" style={{ animationDuration: '50s' }}>
-                        {col1.map((src, i) => (
-                            <div key={`c4-${i}`} className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl opacity-60">
-                                <img src={src} alt="" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
-                            </div>
-                        ))}
+                        {BG_COL4.map((src, i) => renderCard(src, `c4-${i}`))}
                     </div>
                 </div>
 
             </div>
         </div>
     );
-};
+});
+SlidingBackground.displayName = 'SlidingBackground';
 
 const Home: React.FC = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -149,7 +151,7 @@ const Home: React.FC = () => {
       {/* Background Animation */}
       <SlidingBackground />
 
-      <div className="bg-slate-900/90 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative z-20 m-4">
+      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative z-30 m-4">
         <div className="text-center mb-8">
           <img src="/logo.png" alt="VPL Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font">

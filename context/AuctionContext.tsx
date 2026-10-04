@@ -22,6 +22,28 @@ interface TeamRecord {
   displayOrder: number;
 }
 
+export const sortTeams = <T extends { id: string; displayOrder?: number }>(list: T[]): T[] => {
+  return [...list].sort((a, b) => {
+    const numA = Number(a.id);
+    const numB = Number(b.id);
+    const hasNumA = !isNaN(numA) && a.id.trim() !== '';
+    const hasNumB = !isNaN(numB) && b.id.trim() !== '';
+
+    // Numerical ID sort: e.g. 1, 2, 3, 4, 5, 6...
+    if (hasNumA && hasNumB) {
+      return numA - numB;
+    }
+    if (hasNumA) return -1;
+    if (hasNumB) return 1;
+
+    const orderA = a.displayOrder ?? 0;
+    const orderB = b.displayOrder ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+
+    return a.id.localeCompare(b.id);
+  });
+};
+
 interface AuctionContextType {
   teams: Team[];
   players: Player[];
@@ -103,7 +125,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
           };
         });
 
-    return sourceTeams.map(team => {
+    return sortTeams(sourceTeams).map(team => {
       const teamPlayers = players
         .filter(p => p.teamId === team.id)
         .sort((a, b) => {
@@ -621,7 +643,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
           .order('display_order', { ascending: true });
 
       if (!error && data && data.length > 0) {
-          setTeamRecords(data.map(transformTeamFromDB));
+          setTeamRecords(sortTeams(data.map(transformTeamFromDB)));
           setUsesAuctionTeamsTable(true);
       }
   };
