@@ -78,7 +78,19 @@ const Admin: React.FC = () => {
       .from('admin_emails')
       .select('*')
       .order('added_at', { ascending: true });
-    if (!error && data) setAdminEmails(data);
+    if (!error && data) {
+      setAdminEmails(data);
+      // Auto-sync profile roles for any existing admin emails
+      for (const ae of data) {
+        if (ae.email) {
+          supabase
+            .from('profiles')
+            .update({ role: 'admin', team_id: null })
+            .ilike('email', ae.email.trim())
+            .then(() => {});
+        }
+      }
+    }
   };
 
   const handleAddAdminEmail = async (e: React.FormEvent) => {
@@ -89,22 +101,43 @@ const Admin: React.FC = () => {
     setAdminEmailError('');
     setAdminEmailSuccess('');
     
+    const trimmedEmail = newAdminEmail.trim().toLowerCase();
+
     try {
-      // Check if already exists
-      const existing = adminEmails.find(a => a.email.toLowerCase() === newAdminEmail.trim().toLowerCase());
+      // Check if already exists in local list
+      const existing = adminEmails.find(a => a.email.toLowerCase() === trimmedEmail);
       if (existing) {
-        setAdminEmailError('This email already has admin access.');
+        // Ensure their profile is set to admin in case it was out of sync
+        await supabase
+          .from('profiles')
+          .update({ role: 'admin', team_id: null })
+          .ilike('email', trimmedEmail);
+
+        setAdminEmailSuccess(`Admin permissions refreshed for ${trimmedEmail}`);
+        setNewAdminEmail('');
+        setTimeout(() => setAdminEmailSuccess(''), 3000);
+        await fetchAdminEmails();
         return;
       }
 
       const { error } = await supabase
         .from('admin_emails')
-        .insert({ email: newAdminEmail.trim().toLowerCase() });
+        .insert({ email: trimmedEmail });
       
       if (error) throw error;
       
+      // Update their profile role to admin if they already have an account
+      try {
+        await supabase
+          .from('profiles')
+          .update({ role: 'admin', team_id: null })
+          .ilike('email', trimmedEmail);
+      } catch (profErr) {
+        console.warn('Profile role sync warning:', profErr);
+      }
+
       setNewAdminEmail('');
-      setAdminEmailSuccess(`Admin access granted to ${newAdminEmail.trim()}`);
+      setAdminEmailSuccess(`Admin access granted to ${trimmedEmail}`);
       setTimeout(() => setAdminEmailSuccess(''), 3000);
       await fetchAdminEmails();
     } catch (err: any) {
@@ -115,7 +148,10 @@ const Admin: React.FC = () => {
   };
 
   const handleRevokeAdmin = async (adminEmail: AdminEmail) => {
-    if (adminEmail.email === user?.email) {
+    const currentEmail = user?.email?.toLowerCase().trim();
+    const targetEmail = adminEmail.email.toLowerCase().trim();
+
+    if (targetEmail === currentEmail) {
       setAdminEmailError('You cannot revoke your own admin access.');
       setTimeout(() => setAdminEmailError(''), 3000);
       return;
@@ -134,11 +170,11 @@ const Admin: React.FC = () => {
       
       if (error) throw error;
 
-      // Also update their profile role to spectator
+      // Also update their profile role to spectator (case-insensitive)
       await supabase
         .from('profiles')
         .update({ role: 'spectator' })
-        .eq('email', adminEmail.email);
+        .ilike('email', targetEmail);
       
       setAdminEmailSuccess(`Admin access revoked for ${adminEmail.email}`);
       setTimeout(() => setAdminEmailSuccess(''), 3000);
@@ -1014,7 +1050,7 @@ const Admin: React.FC = () => {
                 <div key={ae.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      ae.email === user?.email ? 'bg-purple-600/30 text-purple-400' : 'bg-slate-700 text-slate-400'
+                      ae.email.toLowerCase().trim() === user?.email?.toLowerCase().trim() ? 'bg-purple-600/30 text-purple-400' : 'bg-slate-700 text-slate-400'
                     }`}>
                       <Mail size={14} />
                     </div>
@@ -1022,15 +1058,15 @@ const Admin: React.FC = () => {
                       <div className="text-white text-sm font-medium">{ae.email}</div>
                       <div className="text-[10px] text-slate-500">
                         Added {new Date(ae.added_at).toLocaleDateString()}
-                        {ae.email === user?.email && <span className="ml-2 text-purple-400 font-bold">(You)</span>}
+                        {ae.email.toLowerCase().trim() === user?.email?.toLowerCase().trim() && <span className="ml-2 text-purple-400 font-bold">(You)</span>}
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => handleRevokeAdmin(ae)}
-                    disabled={ae.email === user?.email || adminEmailLoading}
+                    disabled={ae.email.toLowerCase().trim() === user?.email?.toLowerCase().trim() || adminEmailLoading}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-red-900/30 text-red-400 hover:bg-red-900/60 hover:text-red-300 border border-red-900/30"
-                    title={ae.email === user?.email ? 'Cannot revoke own access' : 'Revoke admin access'}
+                    title={ae.email.toLowerCase().trim() === user?.email?.toLowerCase().trim() ? 'Cannot revoke own access' : 'Revoke admin access'}
                   >
                     <ShieldX size={12} /> Revoke
                   </button>

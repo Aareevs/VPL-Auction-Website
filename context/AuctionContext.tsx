@@ -129,6 +129,29 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const currentBid = auctionState?.current_bid || 0;
   const currentBidTeamId = auctionState?.current_bidder_team_id || null;
 
+  const applyAuctionStateUpdate = (nextAuctionState: any) => {
+    setAuctionState(prev => {
+      if (!nextAuctionState) {
+        if (prev?.current_player_id) {
+          setBidHistory([]);
+        }
+        return null;
+      }
+
+      if (prev?.current_player_id !== nextAuctionState.current_player_id) {
+        setBidHistory([]);
+      } else if ((nextAuctionState.current_bid || 0) > (prev?.current_bid || 0)) {
+        setBidHistory(history => [{
+          teamId: nextAuctionState.current_bidder_team_id,
+          amount: nextAuctionState.current_bid,
+          timestamp: Date.now()
+        }, ...history]);
+      }
+
+      return nextAuctionState;
+    });
+  };
+
   // Initial Fetch & Realtime Subscription
   useEffect(() => {
     const bootstrap = async () => {
@@ -178,20 +201,10 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const auctionSub = supabase
       .channel('public:auction_state')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_state' }, (payload) => {
-        if (payload.eventType === 'UPDATE') {
-          setAuctionState(payload.new);
-          // If the player changed, reset bid history
-          if (payload.old && payload.new.current_player_id !== payload.old.current_player_id) {
-             setBidHistory([]);
-          }
-           // Add to bid history purely on client side for now (transient)
-           if (payload.new.current_bid > (payload.old?.current_bid || 0)) {
-               setBidHistory(prev => [{ 
-                   teamId: payload.new.current_bidder_team_id, 
-                   amount: payload.new.current_bid, 
-                   timestamp: Date.now() 
-               }, ...prev]);
-           }
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          applyAuctionStateUpdate(payload.new);
+        } else if (payload.eventType === 'DELETE') {
+          applyAuctionStateUpdate(null);
         }
       })
       .subscribe();
@@ -254,34 +267,36 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, []);
 
+  useEffect(() => {
+    if (!isBootstrapped) return;
+
+    const refreshSnapshot = () => {
+      fetchAuctionSnapshot();
+    };
+
+    const intervalId = window.setInterval(refreshSnapshot, 1000);
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSnapshot();
+      }
+    };
+
+    window.addEventListener('focus', refreshSnapshot);
+    document.addEventListener('visibilitychange', handleVisibilityRefresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshSnapshot);
+      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
+    };
+  }, [isBootstrapped]);
+
   const fetchInitialData = async (attempt = 1): Promise<void> => {
     try {
-      const { data: playersData, error } = await supabase.from('players').select('*').order('set_no', { ascending: true });
-      
-      if (error) {
-          // Retry on AbortError
-          if (error.message?.includes('AbortError') || error.message?.includes('aborted')) {
-            if (attempt < 3) {
-              console.log(`[Auction] Retrying fetch (attempt ${attempt + 1}/3)...`);
-              await new Promise(r => setTimeout(r, 500));
-              return fetchInitialData(attempt + 1);
-            }
-          }
-          console.error("Error fetching players:", error);
-          return;
+      const snapshotLoaded = await fetchAuctionSnapshot(attempt);
+      if (!snapshotLoaded) {
+        return;
       }
-
-      if (playersData) {
-          const sorted_players = playersData.map(transformPlayerFromDB).sort((a, b) => {
-              if (a.set !== b.set) return a.set - b.set;
-              const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
-              return getNum(a.id) - getNum(b.id);
-          });
-          setPlayers(sorted_players);
-      }
-
-      const { data: auctionData } = await supabase.from('auction_state').select('*').single();
-      if (auctionData) setAuctionState(auctionData);
 
       const { data: setsData } = await supabase.from('auction_sets').select('*').order('display_order', { ascending: true });
       if (setsData) {
@@ -295,6 +310,38 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       console.error('[Auction] fetchInitialData failed:', err);
     }
+  };
+
+  const fetchAuctionSnapshot = async (attempt = 1): Promise<boolean> => {
+    const { data: playersData, error } = await supabase.from('players').select('*').order('set_no', { ascending: true });
+
+    if (error) {
+      if ((error.message?.includes('AbortError') || error.message?.includes('aborted')) && attempt < 3) {
+        console.log(`[Auction] Retrying snapshot fetch (attempt ${attempt + 1}/3)...`);
+        await new Promise(r => setTimeout(r, 500));
+        return fetchAuctionSnapshot(attempt + 1);
+      }
+      console.error('Error fetching players:', error);
+      return false;
+    }
+
+    if (playersData) {
+      const sortedPlayers = playersData.map(transformPlayerFromDB).sort((a, b) => {
+        if (a.set !== b.set) return a.set - b.set;
+        const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
+        return getNum(a.id) - getNum(b.id);
+      });
+      setPlayers(sortedPlayers);
+    }
+
+    const { data: auctionData, error: auctionError } = await supabase.from('auction_state').select('*').maybeSingle();
+    if (auctionError && auctionError.code !== 'PGRST116') {
+      console.error('Error fetching auction state:', auctionError);
+      return false;
+    }
+
+    applyAuctionStateUpdate(auctionData || null);
+    return true;
   };
   
   // Helper to map DB casing if needed (assuming DB uses camelCase or consistent, but verify keys)

@@ -28,36 +28,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [isAdminEmail, setIsAdminEmail] = useState(false);
+
   const fetchAndUpsertProfile = useCallback(async (authUser: User) => {
     try {
-      // Try to fetch existing profile
+      const userEmail = (authUser.email || '').toLowerCase().trim();
+      const isSuperAdmin = userEmail === 'aareevs@gmail.com';
+
+      // 1. Check if the user is listed in admin_emails table
+      let isEmailAdmin = isSuperAdmin;
+      if (userEmail && !isSuperAdmin) {
+        try {
+          const { data: adminRecord } = await supabase
+            .from('admin_emails')
+            .select('email')
+            .ilike('email', userEmail)
+            .maybeSingle();
+
+          if (adminRecord) {
+            isEmailAdmin = true;
+          }
+        } catch (adminErr) {
+          console.error('[Auth] Error querying admin_emails:', adminErr);
+        }
+      }
+
+      setIsAdminEmail(isEmailAdmin);
+
+      // 2. Fetch existing profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
-        setProfile(data as UserProfile);
+        let currentProfile = data as UserProfile;
+
+        // Synchronize role if there is a mismatch with admin_emails
+        if (isEmailAdmin && currentProfile.role !== 'admin') {
+          currentProfile = { ...currentProfile, role: 'admin', team_id: null };
+          try {
+            await supabase
+              .from('profiles')
+              .update({ role: 'admin', team_id: null })
+              .eq('id', authUser.id);
+          } catch (updateErr) {
+            console.warn('[Auth] Failed to update profile role in DB:', updateErr);
+          }
+        } else if (!isEmailAdmin && currentProfile.role === 'admin' && !isSuperAdmin) {
+          currentProfile = { ...currentProfile, role: 'spectator' };
+          try {
+            await supabase
+              .from('profiles')
+              .update({ role: 'spectator' })
+              .eq('id', authUser.id);
+          } catch (updateErr) {
+            console.warn('[Auth] Failed to demote profile role in DB:', updateErr);
+          }
+        }
+
+        setProfile(currentProfile);
         return;
       }
 
-      // If no profile exists (error.code === 'PGRST116') or other error, let's upsert one
-      let role: UserRole = 'spectator';
-      
-      // Check if they are an admin
-      if (authUser.email) {
-        const { data: adminData } = await supabase
-          .from('admin_emails')
-          .select('email')
-          .eq('email', authUser.email)
-          .single();
-          
-        if (adminData) role = 'admin';
-      }
-
-      // Upsert new profile
-      const newProfile = {
+      // 3. If no profile exists, create/upsert one with the proper role
+      const role: UserRole = isEmailAdmin ? 'admin' : 'spectator';
+      const newProfile: UserProfile = {
         id: authUser.id,
         email: authUser.email || '',
         full_name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
@@ -70,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .upsert(newProfile);
 
       if (!upsertError) {
-        setProfile(newProfile as UserProfile);
+        setProfile(newProfile);
+      } else {
+        setProfile(newProfile);
       }
     } catch (err) {
       console.error('[Auth] Profile operation failed:', err);
@@ -106,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchAndUpsertProfile(currentUser);
       } else {
         setProfile(null);
+        setIsAdminEmail(false);
       }
     });
 
@@ -115,13 +155,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchAndUpsertProfile]);
 
+  // Real-time synchronization: listen to changes in admin_emails table
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('auth_admin_emails_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_emails' }, () => {
+        fetchAndUpsertProfile(user);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchAndUpsertProfile]);
+
   const signOut = async () => {
     try { await supabase.auth.signOut(); } catch {}
     setUser(null);
     setProfile(null);
+    setIsAdminEmail(false);
   };
 
-  const isAdmin = profile?.role === 'admin' || user?.email === 'aareevs@gmail.com';
+  const userEmailLower = user?.email?.toLowerCase().trim();
+  const isAdmin = profile?.role === 'admin' || isAdminEmail || userEmailLower === 'aareevs@gmail.com';
 
   const value = {
     user,
