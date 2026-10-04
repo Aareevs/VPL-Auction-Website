@@ -218,42 +218,45 @@ const Dashboard: React.FC = () => {
                                 </div>
 
                                 <div className="flex-shrink-0 self-start md:self-end">
-                                    <div className="rounded-2xl border border-yellow-400/20 bg-black/40 px-5 py-3.5 text-left md:text-right min-w-[190px] w-fit">
-                                        <div className="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold">
-                                            {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
-                                        </div>
-                                        
-                                        <div className="mt-1 flex items-center justify-start md:justify-end gap-2.5">
+                                    <div className="rounded-2xl border border-yellow-400/25 bg-black/45 p-4 md:px-5 md:py-4 w-fit min-w-[210px]">
+                                        <div className="flex items-center gap-3.5">
                                             {holdingTeam && currentBid > currentPlayer.basePrice ? (
-                                                <div className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center flex-shrink-0">
+                                                <div className="w-16 h-16 md:w-[68px] md:h-[68px] flex items-center justify-center flex-shrink-0">
                                                     {holdingTeam.logoUrl ? (
                                                         <img 
                                                             src={holdingTeam.logoUrl} 
                                                             alt={holdingTeam.name} 
-                                                            className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                                                            className="w-full h-full object-contain drop-shadow-[0_2px_10px_rgba(0,0,0,0.7)]"
                                                             onError={(e) => {
                                                                 const target = e.target as HTMLElement;
                                                                 target.style.display = 'none';
                                                                 if (target.parentElement) {
-                                                                    target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center font-bold text-[10px] text-white uppercase rounded-md" style="background:${holdingTeam.primaryColor}">${holdingTeam.shortName || holdingTeam.name.slice(0, 3)}</div>`;
+                                                                    target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center font-bold text-xs text-white uppercase rounded-xl" style="background:${holdingTeam.primaryColor}">${holdingTeam.shortName || holdingTeam.name.slice(0, 3)}</div>`;
                                                                 }
                                                             }}
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center font-bold text-[10px] text-white uppercase rounded-md shadow-sm" style={{ background: holdingTeam.primaryColor }}>
+                                                        <div className="w-full h-full flex items-center justify-center font-bold text-xs text-white uppercase rounded-xl shadow-sm" style={{ background: holdingTeam.primaryColor }}>
                                                             {holdingTeam.shortName || holdingTeam.name.slice(0, 3)}
                                                         </div>
                                                     )}
                                                 </div>
                                             ) : null}
-                                            <div className={`text-3xl md:text-4xl lg:text-[2.85rem] font-black display-font leading-none ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
-                                                {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
+
+                                            <div className="flex flex-col text-left justify-center">
+                                                <div className="text-[11px] uppercase tracking-[0.3em] text-slate-400 font-semibold leading-tight">
+                                                    {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
+                                                </div>
+                                                
+                                                <div className={`text-4xl md:text-5xl font-black display-font leading-none mt-0.5 ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
+                                                    {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="mt-1.5 text-xs md:text-sm font-bold uppercase tracking-[0.16em] truncate max-w-[240px]">
+                                        <div className="mt-2 text-xs md:text-sm font-bold uppercase tracking-[0.16em] whitespace-nowrap">
                                             {holdingTeam && currentBid > currentPlayer.basePrice ? (
-                                                <span className="truncate block" title={holdingTeam.name}>
+                                                <span>
                                                     <span className="text-slate-500 font-semibold">Held By </span>
                                                     <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
                                                 </span>
