@@ -88,6 +88,51 @@ const SlidingBackground = React.memo(() => {
 });
 SlidingBackground.displayName = 'SlidingBackground';
 
+const ProtectedLogo: React.FC<{ className?: string }> = ({ className }) => {
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.src = '/logo.png';
+    img.onload = () => {
+      canvas.width = img.naturalWidth || 1024;
+      canvas.height = img.naturalHeight || 1024;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+    };
+  }, []);
+
+  return (
+    <div 
+      className="relative mx-auto inline-block select-none"
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+    >
+      <canvas 
+        ref={canvasRef}
+        className={className}
+        style={{ 
+          userSelect: 'none', 
+          WebkitUserSelect: 'none', 
+          pointerEvents: 'none' 
+        }}
+      />
+      {/* Invisible protective barrier blocking element inspection and drag */}
+      <div 
+        className="absolute inset-0 z-10 cursor-default select-none"
+        onContextMenu={(e) => e.preventDefault()}
+        onDragStart={(e) => e.preventDefault()}
+      />
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -151,13 +196,14 @@ const Home: React.FC = () => {
       {/* Background Animation */}
       <SlidingBackground />
 
-      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative z-30 m-4">
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="VPL Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font">
-            VPL Auction 2026
+      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl px-8 pt-4 pb-8 w-full max-w-md shadow-2xl relative z-30 m-4">
+        <div className="text-center mb-5 select-none" onContextMenu={(e) => e.preventDefault()}>
+          <ProtectedLogo className="w-28 h-28 mx-auto mb-1 object-contain drop-shadow-md" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font leading-tight">
+            VPL Auction 2027
           </h1>
-          <p className="text-slate-400 mt-2">Sign in to join the bidding war</p>
+          <p className="text-blue-400 font-medium text-sm tracking-wide mt-0.5">Time for Season 2</p>
+          <p className="text-slate-400 mt-1 text-sm">Sign in to join the bidding war</p>
         </div>
 
         {/* Warning for development/setup */}
