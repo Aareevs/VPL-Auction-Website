@@ -72,6 +72,13 @@ This project is built using modern web technologies to ensure performance and sc
 
 ---
 
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
 <div align="center">
   <p>Built with ❤️ for the Love of Cricket</p>
 </div>
+
