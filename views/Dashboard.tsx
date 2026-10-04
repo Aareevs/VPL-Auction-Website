@@ -335,7 +335,7 @@ const Dashboard: React.FC = () => {
                 Teams & Squads
              </h3>
              <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                {teams.map(team => (
+                {teams.map((team, index) => (
                     <button 
                         key={team.id} 
                         onClick={() => setSelectedTeam(team)}
@@ -346,7 +346,7 @@ const Dashboard: React.FC = () => {
                                  {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : <div className="text-[10px] font-bold text-white flex items-center justify-center w-full h-full" style={{ background: team.primaryColor }}>{team.shortName}</div>}
                             </div>
                             <div>
-                                <div className="text-white font-bold text-sm">#{team.id} {team.name}</div>
+                                <div className="text-white font-bold text-sm">#{team.id.length > 8 ? (index + 1) : team.id} {team.name}</div>
                                 <div className="text-xs text-slate-400">Purse: <span className="text-green-400 font-mono">{formatAuctionValue(team.remainingPurse, valuationMode)}</span></div>
                             </div>
                         </div>

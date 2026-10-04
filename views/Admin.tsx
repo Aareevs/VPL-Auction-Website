@@ -239,6 +239,7 @@ const Admin: React.FC = () => {
 
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [teamFormId, setTeamFormId] = useState('');
   const [teamFormName, setTeamFormName] = useState('');
   const [teamFormShortName, setTeamFormShortName] = useState('');
   const [teamFormLogo, setTeamFormLogo] = useState('');
@@ -357,6 +358,7 @@ const Admin: React.FC = () => {
 
       setTeamModalOpen(true);
       setEditingTeamId(team.id);
+      setTeamFormId(team.id);
       setTeamFormName(team.name);
       setTeamFormShortName(team.shortName);
       setTeamFormLogo(team.logoUrl || '');
@@ -364,8 +366,16 @@ const Admin: React.FC = () => {
   };
 
   const openCreateTeam = () => {
+      // Find lowest unused integer ID (1, 2, 3...)
+      let nextNum = 1;
+      const existingIds = new Set(teams.map(t => t.id));
+      while (existingIds.has(String(nextNum))) {
+        nextNum++;
+      }
+
       setTeamModalOpen(true);
       setEditingTeamId(null);
+      setTeamFormId(String(nextNum));
       setTeamFormName('');
       setTeamFormShortName('');
       setTeamFormLogo('');
@@ -375,6 +385,7 @@ const Admin: React.FC = () => {
   const closeTeamEditor = () => {
       setTeamModalOpen(false);
       setEditingTeamId(null);
+      setTeamFormId('');
       setTeamFormName('');
       setTeamFormShortName('');
       setTeamFormLogo('');
@@ -385,22 +396,28 @@ const Admin: React.FC = () => {
       e.preventDefault();
 
       if (editingTeamId) {
-          await updateTeam(editingTeamId, {
+          const success = await updateTeam(editingTeamId, {
+              newId: teamFormId.trim(),
               name: teamFormName.trim(),
               shortName: teamFormShortName.trim().toUpperCase(),
               logoUrl: teamFormLogo.trim(),
               primaryColor: teamFormColor
           });
+          if (success !== false) {
+              closeTeamEditor();
+          }
       } else {
-          await createTeam({
+          const success = await createTeam({
+              id: teamFormId.trim(),
               name: teamFormName.trim(),
               shortName: teamFormShortName.trim().toUpperCase(),
               logoUrl: teamFormLogo.trim(),
               primaryColor: teamFormColor
           });
+          if (success !== false) {
+              closeTeamEditor();
+          }
       }
-
-      closeTeamEditor();
   };
 
   const handleDeleteTeam = async () => {
@@ -1317,7 +1334,21 @@ const Admin: React.FC = () => {
                   </div>
 
                   <form onSubmit={handleSaveTeam} className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                              <label className="block text-slate-400 text-xs mb-1">
+                                  Team ID / Number {editingTeamId && <span className="text-cyan-400 font-semibold">(editable)</span>}
+                              </label>
+                              <input
+                                  type="text"
+                                  required
+                                  className="w-full bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:outline-none focus:border-cyan-500 font-mono text-sm"
+                                  placeholder="e.g. 1, 2, 3..."
+                                  value={teamFormId}
+                                  onChange={e => setTeamFormId(e.target.value.trim())}
+                              />
+                              <p className="text-[10px] text-slate-500 mt-1">Displays as #{teamFormId || '?'} on dashboard</p>
+                          </div>
                           <div>
                               <label className="block text-slate-400 text-xs mb-1">Team Name</label>
                               <input

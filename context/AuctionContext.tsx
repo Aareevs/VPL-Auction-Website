@@ -45,8 +45,8 @@ interface AuctionContextType {
   passPlayer: () => void;
   resetAuction: () => void;
   deletePlayer: (playerId: string) => void;
-  updateTeam: (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => Promise<void>;
-  createTeam: (team: {name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => Promise<void>;
+  updateTeam: (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string, newId?: string}>) => Promise<boolean>;
+  createTeam: (team: {id?: string, name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => Promise<boolean>;
   deleteTeam: (teamId: string) => Promise<void>;
   updateValuationMode: (mode: AuctionValueMode) => Promise<void>;
   updateCaptainSpotlightEnabled: (enabled: boolean) => Promise<void>;
@@ -250,7 +250,15 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (payload.eventType === 'INSERT') {
           setTeamRecords(prev => [...prev, transformTeamFromDB(payload.new)].sort((a, b) => a.displayOrder - b.displayOrder));
         } else if (payload.eventType === 'UPDATE') {
-          setTeamRecords(prev => prev.map(team => team.id === payload.new.id ? transformTeamFromDB(payload.new) : team).sort((a, b) => a.displayOrder - b.displayOrder));
+          setTeamRecords(prev => {
+            const matchId = payload.old?.id || payload.new.id;
+            const updated = transformTeamFromDB(payload.new);
+            const exists = prev.some(t => t.id === matchId);
+            if (!exists) {
+              return [...prev.filter(t => t.id !== payload.new.id), updated].sort((a, b) => a.displayOrder - b.displayOrder);
+            }
+            return prev.map(t => t.id === matchId ? updated : t).sort((a, b) => a.displayOrder - b.displayOrder);
+          });
         } else if (payload.eventType === 'DELETE') {
           setTeamRecords(prev => prev.filter(team => team.id !== payload.old.id));
         }
@@ -676,9 +684,26 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
   };
 
-  const createTeam = async (team: {name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}) => {
+  const createTeam = async (team: {id?: string, name: string, shortName: string, logoUrl?: string, primaryColor: string, secondaryColor?: string}): Promise<boolean> => {
+      let teamId = team.id?.trim();
+      if (!teamId) {
+        // Auto-assign lowest unused positive number (1, 2, 3...)
+        let nextNum = 1;
+        const existingIds = new Set(teamRecords.map(t => t.id));
+        while (existingIds.has(String(nextNum))) {
+          nextNum++;
+        }
+        teamId = String(nextNum);
+      } else {
+        const exists = teamRecords.some(t => t.id.toLowerCase() === teamId!.toLowerCase());
+        if (exists) {
+          alert(`Team ID "${teamId}" already exists. Please choose a different number or ID.`);
+          return false;
+        }
+      }
+
       const { error } = await supabase.from('auction_teams').insert({
-          id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `team-${Date.now()}`,
+          id: teamId,
           name: team.name,
           short_name: team.shortName,
           primary_color: team.primaryColor,
@@ -689,8 +714,10 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       if (error) {
           alert('Error creating team: ' + error.message);
+          return false;
       } else {
           setUsesAuctionTeamsTable(true);
+          return true;
       }
   };
 
@@ -712,20 +739,71 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
   };
 
-  const updateTeam = async (teamId: string, updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string}>) => {
+  const updateTeam = async (
+    teamId: string,
+    updates: Partial<{name: string, shortName: string, logoUrl: string, primaryColor: string, newId?: string}>
+  ): Promise<boolean> => {
+      const trimmedNewId = updates.newId?.trim();
+      const isIdChanging = trimmedNewId && trimmedNewId !== teamId;
+
+      if (isIdChanging) {
+        const isTaken = teamRecords.some(t => t.id.toLowerCase() === trimmedNewId.toLowerCase() && t.id !== teamId);
+        if (isTaken) {
+          alert(`Team ID "${trimmedNewId}" is already in use by another team. Please choose a different ID.`);
+          return false;
+        }
+      }
+
       if (usesAuctionTeamsTable) {
           const dbUpdates: any = { updated_at: new Date().toISOString() };
           if (updates.name !== undefined) dbUpdates.name = updates.name;
           if (updates.shortName !== undefined) dbUpdates.short_name = updates.shortName;
           if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl;
           if (updates.primaryColor !== undefined) dbUpdates.primary_color = updates.primaryColor;
+          if (isIdChanging) dbUpdates.id = trimmedNewId;
 
           const { error } = await supabase.from('auction_teams').update(dbUpdates).eq('id', teamId);
 
           if (error) {
               alert('Error updating team: ' + error.message);
+              return false;
           }
-          return;
+
+          // If the team ID was updated, cascade to all related tables
+          if (isIdChanging && trimmedNewId) {
+            try {
+              await Promise.all([
+                supabase.from('players').update({ team_id: trimmedNewId }).eq('team_id', teamId),
+                supabase.from('auction_state').update({ current_bidder_team_id: trimmedNewId }).eq('current_bidder_team_id', teamId),
+                supabase.from('profiles').update({ team_id: trimmedNewId }).eq('team_id', teamId),
+                supabase.from('team_overrides').update({ team_id: trimmedNewId }).eq('team_id', teamId)
+              ]);
+            } catch (cascadeErr) {
+              console.warn('Cascade update warning:', cascadeErr);
+            }
+
+            // Immediately update local state
+            setTeamRecords(prev =>
+              prev.map(team =>
+                team.id === teamId
+                  ? {
+                      ...team,
+                      id: trimmedNewId,
+                      name: updates.name ?? team.name,
+                      shortName: updates.shortName ?? team.shortName,
+                      logoUrl: updates.logoUrl ?? team.logoUrl,
+                      primaryColor: updates.primaryColor ?? team.primaryColor
+                    }
+                  : team
+              )
+            );
+
+            setPlayers(prev =>
+              prev.map(p => (p.teamId === teamId ? { ...p, teamId: trimmedNewId } : p))
+            );
+          }
+
+          return true;
       }
 
       const dbUpdates: any = { updated_at: new Date().toISOString() };
@@ -741,8 +819,10 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       if (error) {
           alert('Error updating team: ' + error.message);
+          return false;
       }
-  }
+      return true;
+  };
 
   return (
     <AuctionContext.Provider value={{

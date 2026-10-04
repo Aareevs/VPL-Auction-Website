@@ -3,12 +3,18 @@
 -- Run this script in the Supabase SQL Editor
 -- =====================================================
 
--- 1. Immediately backfill existing profiles for all admin emails
+-- 1. Temporarily disable the role lock trigger while running in SQL Editor
+ALTER TABLE profiles DISABLE TRIGGER prevent_role_change_trigger;
+
+-- 2. Backfill existing profiles for all admin emails
 UPDATE profiles
 SET role = 'admin', team_id = NULL
 WHERE LOWER(email) IN (SELECT LOWER(email) FROM admin_emails);
 
--- 2. Update force_admin_role to be case-insensitive
+-- 3. Re-enable the trigger
+ALTER TABLE profiles ENABLE TRIGGER prevent_role_change_trigger;
+
+-- 4. Update force_admin_role to be case-insensitive
 CREATE OR REPLACE FUNCTION force_admin_role()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -26,7 +32,7 @@ BEFORE INSERT OR UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION force_admin_role();
 
--- 3. Update prevent_role_change so it permits admin role updates for admin emails
+-- 5. Update prevent_role_change so it permits admin role updates for admin emails
 CREATE OR REPLACE FUNCTION prevent_role_change()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -56,7 +62,7 @@ BEFORE UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION prevent_role_change();
 
--- 4. Trigger on admin_emails to automatically update profiles when an email is added or removed
+-- 6. Trigger on admin_emails to automatically update profiles when an email is added or removed
 CREATE OR REPLACE FUNCTION sync_admin_email_to_profiles()
 RETURNS TRIGGER AS $$
 BEGIN
