@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuction } from '../context/AuctionContext';
+import { useAuction, sortSets, sortPlayers } from '../context/AuctionContext';
 import { useAuth } from '../context/AuthProvider';
 import { PlayerStatus, Player } from '../types';
 import { formatAuctionValue, getAuctionUnitLabel } from '../constants';
@@ -37,6 +37,7 @@ const Admin: React.FC = () => {
     resetAuction,
     deletePlayer,
     sets,
+    setSets,
     createSet,
     updatePlayerSet,
     reorderSets,
@@ -220,6 +221,7 @@ const Admin: React.FC = () => {
           // Update the local list so it re-renders immediately
           const newOrder = localSetOrder.map(s => s.id === setId ? { ...s, name: editSetName.trim() } : s);
           setLocalSetOrder(newOrder);
+          setSets(prev => prev.map(s => s.id === setId ? { ...s, name: editSetName.trim() } : s));
       }
   };
   // Stats
@@ -250,7 +252,7 @@ const Admin: React.FC = () => {
   const soldPlayers = players.filter(p => p.status === PlayerStatus.SOLD);
 
   // Sort sets by display order
-  const sortedSets = [...sets].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const sortedSets = sortSets(sets);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingTeamLogo, setIsUploadingTeamLogo] = useState(false);
@@ -1150,27 +1152,7 @@ const Admin: React.FC = () => {
                     <div className="text-slate-500 text-center mt-12">No unsold players remaining.</div>
                 ) : (
                     sortedSets.map(setObj => {
-                        const setPlayers = unsoldPlayers
-                            .filter(p => p.set === setObj.id)
-                            .sort((a, b) => {
-                                // Priority 1: Display Order (if present)
-                                if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-                                    return a.displayOrder - b.displayOrder;
-                                }
-                                if (a.displayOrder !== undefined) return -1; // Has order comes first
-                                if (b.displayOrder !== undefined) return 1;
-
-                                // Priority 2: Fallback to existing logic (updatedAt or ID)
-                                const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-                                const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-                                
-                                if (timeA === timeB) {
-                                    const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
-                                    return getNum(a.id) - getNum(b.id);
-                                }
-
-                                return timeA - timeB;
-                            });
+                        const setPlayers = sortPlayers(unsoldPlayers.filter(p => p.set === setObj.id));
                         if (setPlayers.length === 0) return null;
 
                         return (

@@ -44,6 +44,43 @@ export const sortTeams = <T extends { id: string; displayOrder?: number }>(list:
   });
 };
 
+export const sortSets = (list: AuctionSet[]): AuctionSet[] => {
+  return [...list].sort((a, b) => {
+    const orderA = a.display_order ?? 0;
+    const orderB = b.display_order ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.id - b.id;
+  });
+};
+
+export const sortPlayers = (list: Player[]): Player[] => {
+  return [...list].sort((a, b) => {
+    // 1. Set number
+    if (a.set !== b.set) return a.set - b.set;
+
+    // 2. Explicit displayOrder if present
+    const hasOrderA = a.displayOrder !== undefined && a.displayOrder !== null;
+    const hasOrderB = b.displayOrder !== undefined && b.displayOrder !== null;
+    if (hasOrderA && hasOrderB) {
+      if (a.displayOrder !== b.displayOrder) return (a.displayOrder as number) - (b.displayOrder as number);
+    } else if (hasOrderA) {
+      return -1;
+    } else if (hasOrderB) {
+      return 1;
+    }
+
+    // 3. Numeric ID comparison (handles "1774543746726", "P-1", etc.)
+    const numA = Number(String(a.id).replace(/\D/g, ''));
+    const numB = Number(String(b.id).replace(/\D/g, ''));
+    if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+      return numA - numB;
+    }
+
+    // 4. Stable alphabetical fallback
+    return a.name.localeCompare(b.name);
+  });
+};
+
 interface AuctionContextType {
   teams: Team[];
   players: Player[];
@@ -54,6 +91,7 @@ interface AuctionContextType {
   currentBidTeamId: string | null;
   bidHistory: Bid[];
   sets: AuctionSet[];
+  setSets: React.Dispatch<React.SetStateAction<AuctionSet[]>>;
   
   // Admin Actions
   createSet: (name: string) => Promise<void>;
@@ -195,26 +233,26 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (payload.eventType === 'UPDATE') {
           // KEY FIX: Transform the raw DB row (snake_case) to our Player object (camelCase)
           const updatedPlayer = transformPlayerFromDB(payload.new);
-          setPlayers(prev => prev.map(p => p.id === payload.new.id ? updatedPlayer : p));
+          setPlayers(prev => sortPlayers(prev.map(p => p.id === payload.new.id ? updatedPlayer : p)));
         } else if (payload.eventType === 'INSERT') {
           const newPlayer = transformPlayerFromDB(payload.new);
-          setPlayers(prev => [...prev, newPlayer]);
+          setPlayers(prev => sortPlayers([...prev.filter(p => p.id !== newPlayer.id), newPlayer]));
         } else if (payload.eventType === 'DELETE') {
           setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
         }
       })
       .subscribe();
 
-
-
     // Subscribe to Sets changes
     const setsSub = supabase
       .channel('public:auction_sets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'auction_sets' }, (payload) => {
           if (payload.eventType === 'INSERT') {
-             setSets(prev => [...prev, payload.new as AuctionSet].sort((a,b) => (a.display_order||0) - (b.display_order||0)));
+             setSets(prev => sortSets([...prev.filter(s => s.id !== payload.new.id), payload.new as AuctionSet]));
           } else if (payload.eventType === 'UPDATE') {
-             setSets(prev => prev.map(s => s.id === payload.new.id ? payload.new as AuctionSet : s).sort((a,b) => (a.display_order||0) - (b.display_order||0)));
+             setSets(prev => sortSets(prev.map(s => s.id === payload.new.id ? payload.new as AuctionSet : s)));
+          } else if (payload.eventType === 'DELETE') {
+             setSets(prev => prev.filter(s => s.id !== payload.old.id));
           }
        })
       .subscribe();
@@ -328,9 +366,13 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
         return;
       }
 
-      const { data: setsData } = await supabase.from('auction_sets').select('*').order('display_order', { ascending: true });
+      const { data: setsData } = await supabase
+        .from('auction_sets')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('id', { ascending: true });
       if (setsData) {
-          setSets(setsData);
+          setSets(sortSets(setsData));
       }
     } catch (err: any) {
       if (err?.name === 'AbortError' && attempt < 3) {
@@ -356,12 +398,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
 
     if (playersData) {
-      const sortedPlayers = playersData.map(transformPlayerFromDB).sort((a, b) => {
-        if (a.set !== b.set) return a.set - b.set;
-        const getNum = (str: string) => parseInt(str.split('-')[1] || '0');
-        return getNum(a.id) - getNum(b.id);
-      });
-      setPlayers(sortedPlayers);
+      setPlayers(sortPlayers(playersData.map(transformPlayerFromDB)));
     }
 
     const { data: auctionData, error: auctionError } = await supabase.from('auction_state').select('*').maybeSingle();
@@ -400,11 +437,17 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // Actions
   const reorderSets = async (orderedSets: AuctionSet[]) => {
-      // Build array of {id, name, display_order} to satisfy NOT NULL 'name' constraint during upsert
-      const updates = orderedSets.map((set, index) => ({
+      // Immediately apply to local state so the UI reflects the change with zero delay/flicker
+      const indexedSets = orderedSets.map((set, index) => ({
+          ...set,
+          display_order: index + 1 // 1-indexed for clarity
+      }));
+      setSets(sortSets(indexedSets));
+
+      const updates = indexedSets.map(set => ({
           id: set.id,
           name: set.name,
-          display_order: index + 1 // 1-indexed for clarity
+          display_order: set.display_order
       }));
 
       // Upsert into auction_sets table
@@ -412,6 +455,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       if (error) {
           console.error("Error reordering sets:", error);
           alert("Error reordering sets: " + error.message);
+          fetchInitialData();
       }
   };
 
@@ -609,17 +653,18 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }
 
   const createSet = async (name: string) => {
-    // Generate next display order
-    const nextOrder = sets.length > 0 ? Math.max(...sets.map(s => s.display_order || 0)) + 1 : 0;
+    const nextOrder = sets.length > 0 ? Math.max(...sets.map(s => s.display_order || 0)) + 1 : 1;
     
-    // Check collision on ID
-    // We let Serial handle ID, but displaying might need reload if realtime fails/is slow
-    const { error } = await supabase.from('auction_sets').insert({
+    const { data, error } = await supabase.from('auction_sets').insert({
         name,
         display_order: nextOrder
-    });
+    }).select().single();
 
-    if (error) alert("Error creating set: " + error.message);
+    if (error) {
+        alert("Error creating set: " + error.message);
+    } else if (data) {
+        setSets(prev => sortSets([...prev, data as AuctionSet]));
+    }
   };
 
   const updatePlayerSet = async (playerId: string, setId: number) => {
@@ -857,6 +902,7 @@ export const AuctionProvider: React.FC<{ children: ReactNode }> = ({ children })
       currentBidTeamId,
       bidHistory,
       sets,
+      setSets,
       createSet,
       reorderSets,
       updatePlayerSet,
