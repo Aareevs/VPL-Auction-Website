@@ -202,35 +202,65 @@ const Dashboard: React.FC = () => {
                     <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-slate-950 via-slate-950/82 to-transparent z-10 pointer-events-none" />
 
                     <div className="absolute inset-x-0 bottom-0 z-20 p-4 md:p-6">
-                        <div className="mx-auto max-w-5xl rounded-[28px] border border-white/10 bg-slate-950/68 backdrop-blur-xl shadow-[0_20px_80px_rgba(2,6,23,0.55)]">
-                            <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-6">
+                        <div className="mx-auto max-w-5xl rounded-[28px] border border-white/10 bg-slate-950/75 backdrop-blur-xl shadow-[0_20px_80px_rgba(2,6,23,0.55)]">
+                            <div className="grid gap-5 p-5 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_350px] md:items-end md:p-6">
                                 <div className="min-w-0">
-                                    <div className="text-[11px] uppercase tracking-[0.35em] text-blue-300/70">On The Block</div>
-                                    <h2 className="mt-3 text-4xl md:text-5xl lg:text-6xl text-white font-black display-font leading-[0.95] tracking-tight uppercase break-words">
+                                    <div className="text-[11px] uppercase tracking-[0.35em] text-blue-300/70 font-semibold">On The Block</div>
+                                    <h2 className="mt-2.5 text-3xl md:text-5xl lg:text-6xl text-white font-black display-font leading-[0.95] tracking-tight uppercase break-words">
                                         {currentPlayer.name}
                                     </h2>
-                                    <div className="mt-4 inline-flex items-center gap-3 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5">
+                                    <div className="mt-3.5 inline-flex items-center gap-2.5 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-2">
                                         <Shield size={18} className="text-blue-300" />
-                                        <span className="text-sm md:text-lg font-bold uppercase tracking-[0.22em] text-blue-100">
+                                        <span className="text-sm md:text-base font-bold uppercase tracking-[0.22em] text-blue-100">
                                             {currentPlayer.role || 'Player'}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col items-start md:items-end">
-                                    <div className="rounded-2xl border border-yellow-400/20 bg-black/35 px-5 py-4 md:px-6 text-left md:text-right min-w-[210px]">
-                                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
+                                <div className="flex flex-col items-start md:items-end w-full">
+                                    <div className="w-full rounded-2xl border border-yellow-400/20 bg-black/45 p-4 md:p-5 text-left md:text-right flex flex-col justify-between min-h-[120px]">
+                                        <div className="text-[11px] uppercase tracking-[0.35em] text-slate-400 font-semibold">
                                             {currentBid > currentPlayer.basePrice ? 'Current Bid' : 'Base Price'}
                                         </div>
-                                        <div className={`mt-2 text-4xl md:text-[3.25rem] font-black display-font leading-none ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
-                                            {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
-                                        </div>
-                                        {holdingTeam && currentBid > currentPlayer.basePrice ? (
-                                            <div className="mt-3 text-sm font-bold uppercase tracking-[0.2em]">
-                                                <span className="text-slate-500">Held By </span>
-                                                <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
+                                        
+                                        <div className="my-1.5 flex items-center justify-start md:justify-end gap-3 min-h-[52px]">
+                                            {holdingTeam && currentBid > currentPlayer.basePrice ? (
+                                                <div className="w-12 h-12 md:w-13 md:h-13 rounded-xl overflow-hidden border border-white/20 bg-slate-900/90 p-1 flex items-center justify-center flex-shrink-0 shadow-lg shadow-black/50">
+                                                    {holdingTeam.logoUrl ? (
+                                                        <img 
+                                                            src={holdingTeam.logoUrl} 
+                                                            alt={holdingTeam.name} 
+                                                            className="w-full h-full object-contain"
+                                                            onError={(e) => {
+                                                                const target = e.target as HTMLElement;
+                                                                target.style.display = 'none';
+                                                                if (target.parentElement) {
+                                                                    target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center font-black text-xs text-white uppercase" style="background:${holdingTeam.primaryColor}">${holdingTeam.shortName || holdingTeam.name.slice(0, 3)}</div>`;
+                                                                }
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center font-black text-xs text-white uppercase rounded-lg" style={{ background: holdingTeam.primaryColor }}>
+                                                            {holdingTeam.shortName || holdingTeam.name.slice(0, 3)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : null}
+                                            <div className={`text-4xl md:text-[3.25rem] font-black display-font leading-none ${currentBid > currentPlayer.basePrice ? 'text-yellow-400' : 'text-white'}`}>
+                                                {formatAuctionValue(currentBid > currentPlayer.basePrice ? currentBid : currentPlayer.basePrice, valuationMode)}
                                             </div>
-                                        ) : null}
+                                        </div>
+
+                                        <div className="text-xs md:text-sm font-bold uppercase tracking-[0.18em] truncate">
+                                            {holdingTeam && currentBid > currentPlayer.basePrice ? (
+                                                <span className="truncate block" title={holdingTeam.name}>
+                                                    <span className="text-slate-500">Held By </span>
+                                                    <span style={{ color: holdingTeam.primaryColor }}>{holdingTeam.name}</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-500 font-normal">Opening Bid</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

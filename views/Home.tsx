@@ -191,54 +191,54 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden">
+    <div className="min-h-screen py-4 px-3 sm:py-8 sm:px-4 flex items-center justify-center bg-slate-950 relative overflow-x-hidden">
       
       {/* Background Animation */}
       <SlidingBackground />
 
-      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl px-8 pt-4 pb-8 w-full max-w-md shadow-2xl relative z-30 m-4">
-        <div className="text-center mb-5 select-none" onContextMenu={(e) => e.preventDefault()}>
-          <ProtectedLogo className="w-28 h-28 mx-auto mb-1 object-contain drop-shadow-md" />
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font leading-tight">
+      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl px-5 py-5 sm:px-8 sm:pt-4 sm:pb-8 w-full max-w-[390px] sm:max-w-md shadow-2xl relative z-30 my-auto">
+        <div className="text-center mb-3 sm:mb-5 select-none" onContextMenu={(e) => e.preventDefault()}>
+          <ProtectedLogo className="w-20 h-20 sm:w-28 sm:h-28 mx-auto mb-1 object-contain drop-shadow-md" />
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent display-font leading-tight">
             VPL Auction 2027
           </h1>
-          <p className="text-blue-400 font-medium text-sm tracking-wide mt-0.5">Time for Season 2</p>
-          <p className="text-slate-400 mt-1 text-sm">Sign in to join the bidding war</p>
+          <p className="text-blue-400 font-medium text-xs sm:text-sm tracking-wide mt-0.5">Time for Season 2</p>
+          <p className="text-slate-400 mt-0.5 sm:mt-1 text-xs sm:text-sm">Sign in to join the bidding war</p>
         </div>
 
         {/* Warning for development/setup */}
         {!import.meta.env.VITE_SUPABASE_URL && (
-           <div className="mb-6 p-4 bg-red-900/40 border border-red-700 rounded-lg text-red-200 text-sm">
+           <div className="mb-4 p-3 bg-red-900/40 border border-red-700 rounded-lg text-red-200 text-xs sm:text-sm">
              <strong>Configuration Required:</strong> Supabase credentials are missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment/Vercel settings.
            </div>
         )}
 
         {message && (
-          <div className="mb-4 p-3 bg-blue-900/30 border border-blue-800 rounded-lg text-blue-200 text-sm">
+          <div className="mb-3 p-2.5 sm:p-3 bg-blue-900/30 border border-blue-800 rounded-lg text-blue-200 text-xs sm:text-sm">
             {message}
           </div>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-3 sm:space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
+            <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="you@example.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
+            <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
             />
           </div>
@@ -246,23 +246,23 @@ const Home: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </button>
         </form>
 
-        <div className="my-6 flex items-center">
+        <div className="my-3 sm:my-5 flex items-center">
           <div className="flex-grow border-t border-slate-800"></div>
-          <span className="px-4 text-xs text-slate-500 uppercase">Or continue with</span>
+          <span className="px-3 text-[11px] sm:text-xs text-slate-500 uppercase tracking-wider">Or continue with</span>
           <div className="flex-grow border-t border-slate-800"></div>
         </div>
 
         <button
           onClick={handleGoogleLogin}
-          className="w-full bg-white text-slate-900 font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"
+          className="w-full bg-white text-slate-900 font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base hover:bg-slate-100 transition-colors"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
               fill="#4285F4"
@@ -283,7 +283,7 @@ const Home: React.FC = () => {
           Google
         </button>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <p className="mt-3 sm:mt-5 text-center text-xs sm:text-sm text-slate-400">
           {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             onClick={() => setIsSignUp(!isSignUp)}
